@@ -11,9 +11,9 @@ import { profile, recent, interests } from '../data/site';
     </section>
 
     <section class="section container band">
-      <div class="grid2">
-        <h2 class="eyebrow">About</h2>
-        <div class="about measure">
+      <div class="about-block">
+        <h2 class="eyebrow about-block__label">About</h2>
+        <div class="about">
           {profile.about.map((p) => <p>{p}</p>)}
         </div>
       </div>
@@ -21,7 +21,7 @@ import { profile, recent, interests } from '../data/site';
 
     <section class="section container band">
       <div class="grid2">
-        <h2 class="eyebrow">Recent &amp; current</h2>
+        <h2 class="eyebrow">Recent &amp; Pinned Additions</h2>
         <div>
           <ul class="recent">
             {recent.map((r) => (
@@ -68,6 +68,13 @@ import { profile, recent, interests } from '../data/site';
   }
   .grid2 > .eyebrow { padding-top: 0.4rem; }
 
+  /* Mirror the hero: hero text hugs the left, About hugs the right */
+  .about-block {
+    margin-left: auto;
+    max-width: 34rem;
+    text-align: right;
+  }
+  .about-block__label { display: block; margin-bottom: 1rem; }
   .about p {
     color: var(--ink-2);
     font-size: var(--step-1);
