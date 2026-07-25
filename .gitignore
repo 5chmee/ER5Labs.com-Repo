@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Astro build output
+dist/
+.astro/
+
+# Environment / secrets — never commit these
+.env
+.env.*
+!.env.example
+
+# Large local installer — does not belong in the repo
+Git-2.55.0.3-64-bit.exe
+
+# Build guide docs — kept locally, excluded from the repo (code only)
+ER5Labs-Build-Guide.docx
+ER5Labs-Build-Guide.pdf
+
+# Editor workspace settings
+.vscode/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
