@@ -1,0 +1,29 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base title="Not found — ER5Labs" description="This departure doesn't exist.">
+  <main id="main" class="notfound container">
+    <p class="eyebrow">Error 404</p>
+    <h1 class="notfound__title">This departure isn&rsquo;t on the board.</h1>
+    <p class="notfound__lead measure">
+      The page you were looking for has been cancelled, moved, or never existed.
+      Pick a destination from the board above, or head back home.
+    </p>
+    <a class="notfound__home link-underline" href="/">&larr; Back to the hub</a>
+  </main>
+</Base>
+
+<style>
+  .notfound {
+    padding-top: clamp(2rem, 6vh, 4rem);
+    padding-bottom: clamp(3rem, 10vh, 6rem);
+  }
+  .notfound__title { font-size: var(--step-3); margin-top: 0.75rem; }
+  .notfound__lead { margin-top: 1.15rem; color: var(--ink-2); font-size: var(--step-1); }
+  .notfound__home {
+    display: inline-block;
+    margin-top: 1.75rem;
+    font-family: var(--font-mono);
+    font-size: var(--step--1);
+  }
+</style>
