@@ -8,6 +8,7 @@ const linkedinHref = contact.linkedin.startsWith('http')
 ---
 <Base>
   <main id="main">
+    <h1 class="sr-only">ER5Labs — the personal hub of Emad Rafiq</h1>
     <section class="hero container">
       <p class="eyebrow hero__kicker">Choose a destination above &mdash; or read on</p>
       <p class="hero__intro">{profile.intro}</p>
@@ -15,7 +16,7 @@ const linkedinHref = contact.linkedin.startsWith('http')
 
     <section class="section container band">
       <div class="grid2">
-        <p class="eyebrow">About</p>
+        <h2 class="eyebrow">About</h2>
         <div class="about measure">
           {profile.about.map((p) => <p>{p}</p>)}
         </div>
@@ -24,7 +25,7 @@ const linkedinHref = contact.linkedin.startsWith('http')
 
     <section class="section container band">
       <div class="grid2">
-        <p class="eyebrow">Recent &amp; current</p>
+        <h2 class="eyebrow">Recent &amp; current</h2>
         <div>
           <ul class="recent">
             {recent.map((r) => (
@@ -46,7 +47,7 @@ const linkedinHref = contact.linkedin.startsWith('http')
 
     <section class="section container band" id="contact">
       <div class="grid2">
-        <p class="eyebrow">Contact</p>
+        <h2 class="eyebrow">Contact</h2>
         <div class="contact">
           <p class="contact__lead">Open to collaborations, questions, or just to say hello.</p>
           <div class="contact__links">
