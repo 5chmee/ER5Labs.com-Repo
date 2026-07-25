@@ -1,6 +1,6 @@
 // ---------------------------------------------------------------------------
 // SITE CONTENT — edit this file to change the homepage copy, the board's
-// destinations, recent work, and contact links. No other files need touching.
+// destinations, recent work, résumé link, and contact links.
 // ---------------------------------------------------------------------------
 
 export const profile = {
@@ -8,11 +8,11 @@ export const profile = {
   brand: 'ER5Labs',
   // One human sentence — keep it in your own voice.
   intro:
-    "I'm Emad Rafiq. I build and run digital projects under ER5Labs — a home base for everything I create, control, and collaborate on.",
+    "I'm Emad Rafiq. This is my personal portfolio website where I keep, build and post my digital projects and works under ER5Labs, a home base for everything I create, control and collaborate on.",
   // Short About shown on the homepage (each string is a paragraph).
   about: [
-    'ER5Labs is my personal brand for the work I do online — a hub that ties together the sites, tools, and experiments I build.',
-    'This board is the front door. Pick a destination to see the work itself, the tools behind it, where I have been, and what I am tinkering with right now.',
+    'ER5Labs is my personal brand for the projects I do, whether it is work I have done or participated in, personal pieces or passion projects.',
+    'This board is the front door — pick a destination to see my projects for yourself, the tools behind them, where I have been, and what I am tinkering with right now.',
   ],
   location: '',
 };
@@ -36,17 +36,28 @@ export const destinations: Destination[] = [
 // A few recent/current things surfaced on the homepage.
 export const recent = [
   {
+    title: 'Secure AI for firms',
+    note: "A private, confidential AI tool I'm building for a client's team.",
+    href: '/projects/secure-ai-for-firms',
+    status: 'In progress',
+  },
+  {
     title: 'ER5Labs.com',
-    note: 'This hub — the central link for all my work.',
-    href: '/projects',
+    note: 'This site — updated whenever I ship something new.',
+    href: '/projects/er5labs',
     status: 'Live',
   },
 ];
 
 export const interests = ['Web & digital craft', 'Minimal, human design', 'Building in the open'];
 
-// NOTE: placeholders — replace with your real links when you decide the
-// contact treatment. Your personal email is intentionally not hard-coded here.
+// Résumé — drop your PDF at public/resume.pdf and this link will serve it.
+export const resume = {
+  url: '/resume.pdf',
+  label: 'View my résumé (PDF)',
+};
+
+// Contact — shown in the footer on every page.
 export const contact = {
   email: 'er5labs@outlook.com',
   linkedin: 'www.linkedin.com/in/emad-rafiq-5232b928a',

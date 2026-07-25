@@ -1,5 +1,7 @@
 // ---------------------------------------------------------------------------
 // EXPERIENCE — career / work history. Newest first. Add an entry per role.
+// (Empty for now — the résumé link on the Experience page covers this until
+//  you add detailed roles here.)
 // ---------------------------------------------------------------------------
 
 export type Role = {
@@ -11,21 +13,12 @@ export type Role = {
 };
 
 export const experience: Role[] = [
-  {
-    period: '2026 — now',
-    role: 'Founder & builder',
-    org: 'ER5Labs',
-    summary:
-      'Building and running a growing set of personal web projects under one hub — from design and front-end to shipping and hosting.',
-    tags: ['Web', 'Design', 'Self-directed'],
-  },
-
-  // ---- EXAMPLE — replace with your real roles, or delete ----
-  {
-    period: 'Year — Year',
-    role: 'Your role',
-    org: 'Company or project',
-    summary: 'One or two sentences on what you did and what you achieved there.',
-    tags: ['Tag'],
-  },
+  // Example — copy this shape when you're ready to add roles:
+  // {
+  //   period: '2026 — now',
+  //   role: 'Your role',
+  //   org: 'Company or project',
+  //   summary: 'One or two sentences on what you did and achieved there.',
+  //   tags: ['Tag'],
+  // },
 ];

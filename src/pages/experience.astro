@@ -2,8 +2,9 @@
 import Base from '../layouts/Base.astro';
 import PageHeader from '../components/PageHeader.astro';
 import { experience } from '../data/experience';
+import { resume } from '../data/site';
 ---
-<Base title="Experience — ER5Labs" description="Emad Rafiq's career and work history.">
+<Base title="Experience — ER5Labs" description="Emad Rafiq's background and résumé.">
   <main id="main">
     <PageHeader
       kicker="ER5Labs — Departures"
@@ -11,26 +12,62 @@ import { experience } from '../data/experience';
       lead="Where I've worked and what I've built along the way."
     />
     <div class="container section--tight">
-      <ol class="xp">
-        {experience.map((r) => (
-          <li class="xp__item">
-            <div class="xp__period">{r.period}</div>
-            <div class="xp__body">
-              <h2 class="xp__role">{r.role} <span class="xp__org">&middot; {r.org}</span></h2>
-              <p class="xp__summary">{r.summary}</p>
-              {r.tags && r.tags.length > 0 && (
-                <ul class="tags xp__tags">{r.tags.map((t) => <li>{t}</li>)}</ul>
-              )}
-            </div>
-          </li>
-        ))}
-      </ol>
+      <div class="resume">
+        <p class="resume__line">The full picture of my background lives in my résumé.</p>
+        <a class="resume__link" href={resume.url} target="_blank" rel="noopener noreferrer">
+          {resume.label} <span aria-hidden="true">&#8599;</span>
+        </a>
+      </div>
+
+      {experience.length > 0 && (
+        <ol class="xp">
+          {experience.map((r) => (
+            <li class="xp__item">
+              <div class="xp__period">{r.period}</div>
+              <div class="xp__body">
+                <h2 class="xp__role">{r.role} <span class="xp__org">&middot; {r.org}</span></h2>
+                <p class="xp__summary">{r.summary}</p>
+                {r.tags && r.tags.length > 0 && (
+                  <ul class="tags xp__tags">{r.tags.map((t) => <li>{t}</li>)}</ul>
+                )}
+              </div>
+            </li>
+          ))}
+        </ol>
+      )}
     </div>
   </main>
 </Base>
 
 <style>
-  .xp { list-style: none; margin: 0; padding: 0; }
+  .resume {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem 2rem;
+    padding: clamp(1.5rem, 4vw, 2.25rem);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+  .resume__line { color: var(--ink-2); font-size: var(--step-1); max-width: 28rem; }
+  .resume__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+    padding: 0.7rem 1.15rem;
+    border-radius: var(--radius);
+    background: var(--accent);
+    color: var(--on-accent);
+    font-weight: 600;
+    font-size: var(--step--1);
+    transition: background var(--transition), transform var(--transition);
+  }
+  .resume__link:hover { background: var(--accent-2); transform: translateY(-2px); }
+
+  .xp { list-style: none; margin: 2.5rem 0 0; padding: 0; }
   .xp__item {
     display: grid;
     gap: 0.5rem 2.5rem;

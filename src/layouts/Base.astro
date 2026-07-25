@@ -9,6 +9,7 @@ import '../styles/global.css';
 import Lamp from '../components/Lamp.astro';
 import SideNav from '../components/SideNav.astro';
 import DepartureBoard from '../components/DepartureBoard.astro';
+import { contact } from '../data/site';
 
 interface Props {
   title?: string;
@@ -23,6 +24,7 @@ const {
 
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const ogImage = new URL(image, Astro.site);
+const linkedinHref = contact.linkedin.startsWith('http') ? contact.linkedin : `https://${contact.linkedin}`;
 ---
 <!doctype html>
 <html lang="en">
@@ -74,12 +76,14 @@ const ogImage = new URL(image, Astro.site);
       </div>
       <slot />
     </div>
-    <footer class="site-footer">
-      <div class="container">
-        <div class="site-footer__inner">
-          <span>&copy; <span id="yr">2026</span> ER5Labs &middot; Emad Rafiq</span>
-          <span class="site-footer__tag">Built as the hub for everything I make.</span>
-        </div>
+    <footer class="site-footer" id="contact">
+      <div class="container site-footer__inner">
+        <p class="site-footer__copy">&copy; <span id="yr">2026</span> ER5Labs &middot; Emad Rafiq</p>
+        <nav class="site-footer__contact" aria-label="Contact">
+          <span class="site-footer__label">Get in touch</span>
+          <a class="site-footer__link" href={`mailto:${contact.email}`}>{contact.email}</a>
+          <a class="site-footer__link" href={linkedinHref} target="_blank" rel="noopener noreferrer">LinkedIn</a>
+        </nav>
       </div>
     </footer>
     <script is:inline>
@@ -99,13 +103,34 @@ const ogImage = new URL(image, Astro.site);
   .site-footer__inner {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     justify-content: space-between;
-    gap: 0.5rem 1.5rem;
+    gap: 0.6rem 1.5rem;
     font-size: var(--step--1);
     color: var(--muted);
   }
-  .site-footer__tag {
-    font-family: var(--font-mono);
-    letter-spacing: 0.01em;
+  .site-footer__copy { color: var(--muted); }
+  .site-footer__contact {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 1rem;
   }
+  .site-footer__label {
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 0.66rem;
+    color: var(--muted);
+  }
+  .site-footer__link {
+    color: var(--ink-2);
+    background-image: linear-gradient(var(--accent), var(--accent));
+    background-size: 0% 1px;
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+    transition: background-size var(--transition), color var(--transition);
+    padding-bottom: 2px;
+  }
+  .site-footer__link:hover { color: var(--accent); background-size: 100% 1px; }
 </style>
