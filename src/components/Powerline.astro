@@ -1,0 +1,69 @@
+---
+// Decorative "power line" — a cable of current running from the pull-cord lamp
+// down toward the departure board, with a travelling spark. Fades out once the
+// visitor scrolls past the board. Purely ornamental (aria-hidden).
+---
+<div class="powerline" aria-hidden="true" data-scrolled="false">
+  <svg viewBox="0 0 200 240" preserveAspectRatio="xMaxYMin meet">
+    <path id="er5-wire" class="powerline__wire"
+      d="M176 6 C 180 54, 150 66, 128 96 C 108 124, 96 150, 78 176 C 66 194, 52 208, 40 224" />
+    <path class="powerline__flow"
+      d="M176 6 C 180 54, 150 66, 128 96 C 108 124, 96 150, 78 176 C 66 194, 52 208, 40 224" />
+    <circle class="powerline__spark" r="2.6">
+      <animateMotion dur="2.6s" repeatCount="indefinite" calcMode="linear" keyPoints="0;1" keyTimes="0;1">
+        <mpath href="#er5-wire" />
+      </animateMotion>
+    </circle>
+    <circle class="powerline__plug" cx="40" cy="224" r="3.4" />
+  </svg>
+</div>
+
+<style>
+  .powerline {
+    position: fixed;
+    top: 0;
+    right: clamp(0.2rem, 4vw, 2.2rem);
+    width: clamp(120px, 20vw, 190px);
+    height: 240px;
+    z-index: 145;
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 400ms ease;
+  }
+  .powerline[data-scrolled="true"] { opacity: 0; }
+  .powerline svg { width: 100%; height: 100%; overflow: visible; }
+
+  .powerline__wire {
+    fill: none;
+    stroke: var(--board-amber);
+    stroke-width: 1.4;
+    stroke-linecap: round;
+    opacity: 0.28;
+  }
+  .powerline__flow {
+    fill: none;
+    stroke: var(--board-amber);
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-dasharray: 5 150;
+    filter: drop-shadow(0 0 3px var(--board-amber));
+    animation: er5-flow 2.6s linear infinite;
+  }
+  @keyframes er5-flow { to { stroke-dashoffset: -155; } }
+
+  .powerline__spark { fill: #fff4d8; filter: drop-shadow(0 0 5px var(--board-amber)); }
+  .powerline__plug { fill: var(--board-amber); opacity: 0.55; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .powerline__flow { display: none; }
+    .powerline__spark { display: none; }
+  }
+  @media (max-width: 899px) { .powerline { display: none; } }
+</style>
+
+<script>
+  const pl = document.querySelector('.powerline');
+  const on = () => pl && pl.setAttribute('data-scrolled', String(window.scrollY > 60));
+  on();
+  window.addEventListener('scroll', on, { passive: true });
+</script>

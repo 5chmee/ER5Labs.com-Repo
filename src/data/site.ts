@@ -48,6 +48,6 @@ export const interests = ['Web & digital craft', 'Minimal, human design', 'Build
 // NOTE: placeholders — replace with your real links when you decide the
 // contact treatment. Your personal email is intentionally not hard-coded here.
 export const contact = {
-  email: 'hello@er5labs.com',
-  linkedin: 'https://www.linkedin.com/in/your-handle',
+  email: 'er5labs@outlook.com',
+  linkedin: 'www.linkedin.com/in/emad-rafiq-5232b928a',
 };

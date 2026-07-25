@@ -1,7 +1,9 @@
 ---
 import '../styles/global.css';
 import Lamp from '../components/Lamp.astro';
+import Powerline from '../components/Powerline.astro';
 import SideNav from '../components/SideNav.astro';
+import DepartureBoard from '../components/DepartureBoard.astro';
 
 interface Props {
   title?: string;
@@ -40,8 +42,12 @@ const {
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
     <Lamp />
+    <Powerline />
     <SideNav />
     <div class="page">
+      <div class="masthead">
+        <DepartureBoard />
+      </div>
       <slot />
     </div>
     <footer class="site-footer">
@@ -60,13 +66,11 @@ const {
 </html>
 
 <style>
+  /* .masthead width lives in global.css so it always applies */
   .site-footer {
     margin-top: var(--sp-7);
     padding-block: var(--sp-5);
     border-top: 1px solid var(--line);
-  }
-  @media (min-width: 900px) {
-    .site-footer { padding-left: var(--rail); }
   }
   .site-footer__inner {
     display: flex;

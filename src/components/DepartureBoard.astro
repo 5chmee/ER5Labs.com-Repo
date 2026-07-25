@@ -1,12 +1,12 @@
 ---
 import { destinations } from '../data/site';
 
-// Split a label into flap tiles.
-const tiles = (label: string) => label.split('').map((ch) => (ch === ' ' ? ' ' : ch));
+// Split a label into individual flap tiles (one per character).
+const tiles = (label: string) => label.split('');
 ---
 <section class="board" aria-label="Departures — choose where to go">
   <div class="board__marquee">
-    <span class="board__brand">ER5LABS</span>
+    <a class="board__brand" href="/" aria-label="ER5Labs home">ER5LABS</a>
     <span class="board__depart">Departures</span>
     <span class="board__clock" id="board-clock" aria-hidden="true">--:--</span>
   </div>
@@ -20,19 +20,19 @@ const tiles = (label: string) => label.split('').map((ch) => (ch === ' ' ? ' ' 
   <ul class="board__rows">
     {destinations.map((d, r) => (
       <li class="board__row">
-        <a class="board__link" href={d.href} style={`--row:${r}`} data-dest>
+        <a class="board__link" href={d.href} data-href={d.href} style={`--row:${r}`}>
           <span class="board__flight">{d.code}</span>
           <span class="board__dest">
-            <span class="board__flaps">
+            <span class="board__flaps" aria-label={d.label}>
               {tiles(d.label).map((ch, i) => (
-                <span class="flap" style={`--i:${i}`}>{ch}</span>
+                <span class="flap" style={`--i:${i}`} data-final={ch} aria-hidden="true">{ch}</span>
               ))}
             </span>
             <span class="board__note">{d.note}</span>
           </span>
-          <span class="board__status" data-state="ontime">
-            <span class="board__status-text">On time</span>
-            <span class="board__arrow" aria-hidden="true">→</span>
+          <span class="board__status" data-state="pending">
+            <span class="board__status-text">To be viewed</span>
+            <span class="board__arrow" aria-hidden="true">&rarr;</span>
           </span>
         </a>
       </li>
@@ -43,76 +43,80 @@ const tiles = (label: string) => label.split('').map((ch) => (ch === ' ' ? ' ' 
 <style>
   .board {
     background: var(--board-bg);
-    border: 1px solid #000;
+    border: 1px solid var(--board-line);
     border-radius: var(--radius-lg);
-    padding: clamp(0.9rem, 2.6vw, 1.6rem) clamp(0.9rem, 2.6vw, 1.9rem) clamp(0.6rem, 2vw, 1rem);
+    padding: clamp(0.85rem, 2.2vw, 1.35rem) clamp(1rem, 2.6vw, 1.9rem) clamp(0.6rem, 1.6vw, 0.9rem);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.05),
-      0 40px 70px -40px rgba(0, 0, 0, 0.6);
-    --col: 4.6rem 1fr auto;
+      inset 0 1px 0 var(--board-inlay),
+      0 34px 60px -42px rgba(0, 0, 0, 0.55);
+    transition: background var(--transition), border-color var(--transition);
+    /* flight | destination | status */
+    --col: 4.4rem 1fr auto;
   }
 
   .board__marquee {
     display: flex;
     align-items: baseline;
     gap: 0.9rem;
-    padding-bottom: 0.85rem;
+    padding-bottom: 0.7rem;
     font-family: var(--font-mono);
   }
   .board__brand {
     color: var(--board-amber);
     font-weight: 500;
-    letter-spacing: 0.22em;
-    font-size: 0.82rem;
+    letter-spacing: 0.24em;
+    font-size: 0.8rem;
+    transition: opacity var(--transition);
   }
+  .board__brand:hover { opacity: 0.8; }
   .board__depart {
     color: var(--board-dim);
     text-transform: uppercase;
-    letter-spacing: 0.24em;
-    font-size: 0.66rem;
+    letter-spacing: 0.26em;
+    font-size: 0.64rem;
   }
   .board__clock {
     margin-left: auto;
     color: var(--board-text);
     letter-spacing: 0.1em;
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     font-variant-numeric: tabular-nums;
   }
 
   .board__head {
     display: grid;
     grid-template-columns: var(--col);
-    gap: clamp(0.6rem, 2vw, 1.4rem);
-    padding: 0 0.4rem 0.7rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+    gap: clamp(0.6rem, 2vw, 1.6rem);
+    padding: 0 0.35rem 0.55rem;
+    border-bottom: 1px solid var(--board-rowline);
     font-family: var(--font-mono);
-    font-size: 0.62rem;
-    letter-spacing: 0.2em;
+    font-size: 0.58rem;
+    letter-spacing: 0.22em;
     text-transform: uppercase;
     color: var(--board-dim);
   }
   .board__head-status { text-align: right; }
 
   .board__rows { list-style: none; margin: 0; padding: 0; }
-  .board__row + .board__row { border-top: 1px solid rgba(255, 255, 255, 0.055); }
+  .board__row + .board__row { border-top: 1px solid var(--board-rowline); }
 
   .board__link {
     display: grid;
     grid-template-columns: var(--col);
-    gap: clamp(0.6rem, 2vw, 1.4rem);
+    gap: clamp(0.6rem, 2vw, 1.6rem);
     align-items: center;
-    padding: clamp(0.6rem, 1.7vw, 1rem) 0.4rem;
+    padding: clamp(0.5rem, 1.3vw, 0.8rem) 0.35rem;
     color: var(--board-text);
     border-radius: 6px;
     transition: background 200ms;
   }
   .board__link:hover,
-  .board__link:focus-visible { background: rgba(255, 255, 255, 0.035); outline: none; }
-  .board__link:focus-visible { box-shadow: inset 0 0 0 1px rgba(230, 161, 58, 0.5); }
+  .board__link:focus-visible { background: var(--board-hover); outline: none; }
+  .board__link:focus-visible { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--board-amber) 60%, transparent); }
 
   .board__flight {
     font-family: var(--font-mono);
-    font-size: 0.78rem;
+    font-size: 0.74rem;
     letter-spacing: 0.08em;
     color: var(--board-amber);
     white-space: nowrap;
@@ -120,46 +124,51 @@ const tiles = (label: string) => label.split('').map((ch) => (ch === ' ' ? ' ' 
   }
 
   .board__dest { min-width: 0; }
-  .board__flaps { display: flex; flex-wrap: wrap; gap: 3px; }
+  .board__flaps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    perspective: 320px;
+  }
 
   .flap {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: clamp(0.82em, 2.2vw, 1.15em);
-    padding: 0.14em 0.05em;
+    min-width: clamp(0.8em, 2vw, 1.05em);
+    padding: 0.13em 0.05em;
     font-family: var(--font-mono);
     font-weight: 500;
-    font-size: clamp(1.05rem, 3.2vw, 1.85rem);
+    font-size: clamp(0.98rem, 2.7vw, 1.55rem);
     line-height: 1;
     color: var(--board-text);
-    background: linear-gradient(var(--board-slat) 0 calc(50% - 0.5px), #14110b calc(50% + 0.5px) 100%);
+    background: linear-gradient(var(--board-slat) 0 calc(50% - 0.5px), var(--board-slat-2) calc(50% + 0.5px) 100%);
     border-radius: 3px;
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.55);
+    box-shadow: inset 0 0 0 1px var(--board-crease);
     position: relative;
-    transform-origin: center bottom;
-    animation: flapIn 520ms var(--ease-flap) backwards;
-    animation-delay: calc(var(--row, 0) * 130ms + var(--i, 0) * 34ms);
+    transform-origin: center top;
+    backface-visibility: hidden;
   }
   .flap::after {
     content: '';
     position: absolute;
     left: 0; right: 0; top: 50%;
     height: 1px;
-    background: rgba(0, 0, 0, 0.5);
+    background: var(--board-crease);
     transform: translateY(-0.5px);
   }
-  @keyframes flapIn {
-    0% { transform: rotateX(-90deg); opacity: 0; }
-    55% { transform: rotateX(12deg); opacity: 1; }
-    100% { transform: rotateX(0); }
+  /* Each character swap during the split-flap animation drops in from the top */
+  .flap.is-turning { animation: flapDrop 78ms var(--ease-flap); }
+  @keyframes flapDrop {
+    0%   { transform: rotateX(-88deg); }
+    100% { transform: rotateX(0deg); }
   }
 
   .board__note {
     display: block;
-    margin-top: 0.4rem;
+    margin-top: 0.38rem;
     font-family: var(--font-mono);
-    font-size: 0.64rem;
+    font-size: 0.62rem;
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--board-dim);
@@ -169,23 +178,28 @@ const tiles = (label: string) => label.split('').map((ch) => (ch === ' ' ? ' ' 
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 0.55rem;
+    gap: 0.5rem;
     font-family: var(--font-mono);
     white-space: nowrap;
     align-self: center;
   }
   .board__status-text {
-    font-size: 0.72rem;
-    letter-spacing: 0.12em;
+    font-size: 0.66rem;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
-    padding: 0.25rem 0.5rem;
+    padding: 0.24rem 0.5rem;
     border-radius: 3px;
     transform-origin: center;
   }
-  .board__status[data-state="ontime"] .board__status-text { color: #86d2a1; background: rgba(127, 206, 155, 0.11); }
-  .board__status[data-state="boarding"] .board__status-text { color: #14110b; background: var(--board-amber); font-weight: 500; }
-  .board__status[data-state="delayed"] .board__status-text { color: #e6a13a; background: rgba(230, 161, 58, 0.13); }
-  .board__status[data-state="late"] .board__status-text { color: #ef7d63; background: rgba(232, 115, 90, 0.15); }
+  .board__status[data-state="viewing"] .board__status-text {
+    color: var(--board-on-amber); background: var(--board-amber); font-weight: 500;
+  }
+  .board__status[data-state="visited"] .board__status-text {
+    color: var(--board-amber); background: color-mix(in srgb, var(--board-amber) 15%, transparent);
+  }
+  .board__status[data-state="pending"] .board__status-text {
+    color: var(--board-dim); background: color-mix(in srgb, var(--board-dim) 16%, transparent);
+  }
   .board__status.is-flipping .board__status-text { animation: statusFlip 420ms var(--ease-flap); }
   @keyframes statusFlip {
     0% { transform: rotateX(0); }
@@ -203,55 +217,105 @@ const tiles = (label: string) => label.split('').map((ch) => (ch === ' ' ? ' ' 
     .board__flight { display: none; }
     .board__head { grid-template-columns: 1fr auto; }
     .board__head span:first-child { display: none; }
+    .board__status-text { font-size: 0.6rem; letter-spacing: 0.06em; }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .flap { animation: none; }
+    .flap.is-turning { animation: none; }
     .board__status.is-flipping .board__status-text { animation: none; }
   }
 </style>
 
 <script>
-  // Live clock
+  // ---- Live clock ---------------------------------------------------------
   const clock = document.getElementById('board-clock');
   const tick = () => {
     if (!clock) return;
     const d = new Date();
-    const hh = String(d.getHours()).padStart(2, '0');
-    const mm = String(d.getMinutes()).padStart(2, '0');
-    clock.textContent = `${hh}:${mm}`;
+    clock.textContent = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   };
   tick();
   window.setInterval(tick, 15000);
 
-  // Board selection: chosen row -> BOARDING, others -> DELAYED / LATE, then go.
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const links = Array.from(document.querySelectorAll('.board__link')) as HTMLAnchorElement[];
 
-  const setStatus = (link: HTMLAnchorElement, text: string, state: string) => {
-    const wrap = link.querySelector('.board__status');
-    const label = link.querySelector('.board__status-text');
-    if (!wrap || !label) return;
-    wrap.setAttribute('data-state', state);
-    label.textContent = text;
-    wrap.classList.remove('is-flipping');
-    void (wrap as HTMLElement).offsetWidth; // restart animation
-    wrap.classList.add('is-flipping');
+  // ---- Split-flap letter animation ---------------------------------------
+  const CHARS = ' ABCDEFGHIJKLMNOPQRSTUVWXYZ.&0123456789';
+  const nbsp = (c: string) => (c === ' ' ? ' ' : c);
+
+  const flaps = Array.from(document.querySelectorAll<HTMLElement>('.flap'));
+  flaps.forEach((el) => {
+    const finalCh = (el.dataset.final || ' ').toUpperCase();
+    if (reduce || finalCh === ' ') {
+      el.textContent = nbsp(finalCh);
+      return;
+    }
+    const targetIdx = Math.max(0, CHARS.indexOf(finalCh));
+    const link = el.closest('.board__link') as HTMLElement | null;
+    const row = parseInt(link?.style.getPropertyValue('--row') || '0', 10) || 0;
+    const i = parseInt(el.style.getPropertyValue('--i') || '0', 10) || 0;
+
+    const spins = 7 + Math.floor(Math.random() * 9);      // characters to cycle through
+    const startDelay = row * 150 + i * 55 + Math.floor(Math.random() * 40);
+    let idx = ((targetIdx - spins) % CHARS.length + CHARS.length) % CHARS.length;
+
+    el.textContent = nbsp(CHARS[idx]); // start scrambled, not on the answer
+    window.setTimeout(() => {
+      const iv = window.setInterval(() => {
+        idx = (idx + 1) % CHARS.length;
+        el.textContent = nbsp(CHARS[idx]);
+        el.classList.remove('is-turning');
+        void el.offsetWidth; // restart the flip animation
+        el.classList.add('is-turning');
+        if (idx === targetIdx) window.clearInterval(iv);
+      }, 60);
+    }, startDelay);
+  });
+
+  // ---- Status: Viewing / To be viewed / Last viewed <n> ago ---------------
+  const VISIT_KEY = 'er5-visits';
+  const readVisits = (): Record<string, number> => {
+    try { return JSON.parse(localStorage.getItem(VISIT_KEY) || '{}'); } catch { return {}; }
+  };
+  const writeVisits = (v: Record<string, number>) => {
+    try { localStorage.setItem(VISIT_KEY, JSON.stringify(v)); } catch {}
+  };
+  const norm = (p: string) => p.replace(/\/+$/, '') || '/';
+  const rel = (ts: number, now: number) => {
+    const mins = Math.floor(Math.max(0, now - ts) / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return `${mins} min${mins === 1 ? '' : 's'} ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs} hr${hrs === 1 ? '' : 's'} ago`;
+    const days = Math.floor(hrs / 24);
+    return `${days} day${days === 1 ? '' : 's'} ago`;
   };
 
-  links.forEach((link) => {
-    link.addEventListener('click', (e) => {
-      const me = e as MouseEvent;
-      if (me.metaKey || me.ctrlKey || me.shiftKey || me.altKey || me.button !== 0) return;
-      e.preventDefault();
-      const href = link.getAttribute('href') || '/';
-      links.forEach((other, idx) => {
-        if (other === link) setStatus(other, 'Boarding', 'boarding');
-        else setStatus(other, idx % 2 === 0 ? 'Delayed' : 'Late', idx % 2 === 0 ? 'delayed' : 'late');
-      });
-      const go = () => (window.location.href = href);
-      if (reduce) go();
-      else window.setTimeout(go, 780);
-    });
+  const now = Date.now();
+  const path = norm(location.pathname);
+  const visits = readVisits();
+  let currentHref: string | null = null;
+
+  Array.from(document.querySelectorAll<HTMLAnchorElement>('.board__link')).forEach((link) => {
+    const href = norm(link.dataset.href || link.getAttribute('href') || '');
+    const isCurrent = href !== '/' && (path === href || path.startsWith(href + '/'));
+    const wrap = link.querySelector('.board__status');
+    const text = link.querySelector('.board__status-text');
+    if (!wrap || !text) return;
+
+    if (isCurrent) {
+      currentHref = href;
+      wrap.setAttribute('data-state', 'viewing');
+      text.textContent = 'Viewing';
+    } else if (visits[href]) {
+      wrap.setAttribute('data-state', 'visited');
+      text.textContent = `Last viewed ${rel(visits[href], now)}`;
+    } else {
+      wrap.setAttribute('data-state', 'pending');
+      text.textContent = 'To be viewed';
+    }
   });
+
+  // Record this page's visit so it reads "Last viewed …" from elsewhere later.
+  if (currentHref) { visits[currentHref] = now; writeVisits(visits); }
 </script>
