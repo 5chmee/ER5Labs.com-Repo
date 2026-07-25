@@ -1,14 +1,173 @@
 ---
 import Base from '../layouts/Base.astro';
+import DepartureBoard from '../components/DepartureBoard.astro';
+import { profile, recent, interests, contact } from '../data/site';
 ---
 <Base>
-  <main id="main" class="section container">
-    <p class="eyebrow">Personal hub &amp; portfolio</p>
-    <h1 style="margin-top:0.75rem;">ER5Labs</h1>
-    <p class="measure" style="color:var(--ink-2); margin-top:1.25rem; font-size:var(--step-1);">
-      Chrome check — pull the lamp cord (top-right) to switch light/dark, and hover
-      the rail on the left to navigate. The departure board and full homepage land
-      in the next stage.
-    </p>
+  <main id="main">
+    <section class="hero">
+      <div class="container hero__inner">
+        <p class="eyebrow hero__kicker">{profile.brand} &nbsp;·&nbsp; {profile.name}</p>
+        <p class="hero__intro">{profile.intro}</p>
+        <div class="hero__board">
+          <DepartureBoard />
+        </div>
+        <p class="hero__hint"><span>Choose a destination</span> &nbsp;— or scroll for more</p>
+      </div>
+    </section>
+
+    <section class="section container band">
+      <div class="grid2">
+        <p class="eyebrow">About</p>
+        <div class="about measure">
+          {profile.about.map((p) => <p>{p}</p>)}
+        </div>
+      </div>
+    </section>
+
+    <section class="section container band">
+      <div class="grid2">
+        <p class="eyebrow">Recent &amp; current</p>
+        <div>
+          <ul class="recent">
+            {recent.map((r) => (
+              <li>
+                <a href={r.href} class="recent__item">
+                  <span class="recent__title">{r.title}</span>
+                  <span class="recent__status">{r.status}</span>
+                  <span class="recent__note">{r.note}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+          <ul class="chips" aria-label="Interests">
+            {interests.map((i) => <li>{i}</li>)}
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section container band" id="contact">
+      <div class="grid2">
+        <p class="eyebrow">Contact</p>
+        <div class="contact">
+          <p class="contact__lead">Open to collaborations, questions, or just to say hello.</p>
+          <div class="contact__links">
+            <a class="contact__link" href={`mailto:${contact.email}`}>
+              <span class="contact__type">Email</span>
+              <span class="contact__val">{contact.email}</span>
+            </a>
+            <a class="contact__link" href={contact.linkedin} target="_blank" rel="noopener noreferrer">
+              <span class="contact__type">LinkedIn</span>
+              <span class="contact__val">Connect on LinkedIn</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
 </Base>
+
+<style>
+  .hero {
+    padding-top: clamp(3rem, 9vh, 6rem);
+    padding-bottom: clamp(2rem, 6vh, 3.5rem);
+  }
+  .hero__kicker { margin-bottom: 1.15rem; }
+  .hero__intro {
+    max-width: 30rem;
+    margin-bottom: clamp(1.75rem, 5vh, 3rem);
+    font-size: var(--step-2);
+    font-weight: 500;
+    line-height: 1.22;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    text-wrap: balance;
+  }
+  .hero__board { max-width: 44rem; }
+  .hero__hint {
+    margin-top: 1.2rem;
+    font-family: var(--font-mono);
+    font-size: var(--step--1);
+    letter-spacing: 0.03em;
+    color: var(--muted);
+  }
+  .hero__hint span { color: var(--accent); }
+
+  .band { border-top: 1px solid var(--line); }
+
+  .grid2 { display: grid; gap: 0.9rem 2.5rem; }
+  @media (min-width: 720px) {
+    .grid2 { grid-template-columns: 9rem 1fr; }
+  }
+  .grid2 > .eyebrow { padding-top: 0.4rem; }
+
+  .about p {
+    color: var(--ink-2);
+    font-size: var(--step-1);
+    line-height: 1.5;
+  }
+  .about p + p { margin-top: 1rem; }
+
+  .recent { list-style: none; margin: 0 0 1.5rem; padding: 0; }
+  .recent__item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.2rem 1rem;
+    align-items: baseline;
+    padding: 1rem 0;
+    border-top: 1px solid var(--line);
+    color: var(--ink);
+    transition: color var(--transition);
+  }
+  .recent li:last-child .recent__item { border-bottom: 1px solid var(--line); }
+  .recent__title { font-weight: 600; font-size: var(--step-1); }
+  .recent__note { grid-column: 1; color: var(--muted); font-size: var(--step--1); }
+  .recent__status {
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    align-self: center;
+  }
+  .recent__item:hover .recent__title { color: var(--accent); }
+
+  .chips { list-style: none; display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0; padding: 0; }
+  .chips li {
+    font-family: var(--font-mono);
+    font-size: var(--step--1);
+    padding: 0.3rem 0.75rem;
+    border: 1px solid var(--line);
+    border-radius: 100px;
+    color: var(--ink-2);
+  }
+
+  .contact__lead {
+    max-width: var(--measure);
+    margin-bottom: 1.25rem;
+    color: var(--ink-2);
+    font-size: var(--step-1);
+  }
+  .contact__links { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+  .contact__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.65rem 1rem;
+    border: 1px solid var(--line-2);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--ink);
+    transition: border-color var(--transition), transform var(--transition);
+  }
+  .contact__link:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .contact__type {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+  }
+  .contact__val { font-size: var(--step--1); }
+</style>

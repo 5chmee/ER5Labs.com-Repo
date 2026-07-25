@@ -1,0 +1,257 @@
+---
+import { destinations } from '../data/site';
+
+// Split a label into flap tiles.
+const tiles = (label: string) => label.split('').map((ch) => (ch === ' ' ? ' ' : ch));
+---
+<section class="board" aria-label="Departures — choose where to go">
+  <div class="board__marquee">
+    <span class="board__brand">ER5LABS</span>
+    <span class="board__depart">Departures</span>
+    <span class="board__clock" id="board-clock" aria-hidden="true">--:--</span>
+  </div>
+
+  <div class="board__head" aria-hidden="true">
+    <span>Flight</span>
+    <span>Destination</span>
+    <span class="board__head-status">Status</span>
+  </div>
+
+  <ul class="board__rows">
+    {destinations.map((d, r) => (
+      <li class="board__row">
+        <a class="board__link" href={d.href} style={`--row:${r}`} data-dest>
+          <span class="board__flight">{d.code}</span>
+          <span class="board__dest">
+            <span class="board__flaps">
+              {tiles(d.label).map((ch, i) => (
+                <span class="flap" style={`--i:${i}`}>{ch}</span>
+              ))}
+            </span>
+            <span class="board__note">{d.note}</span>
+          </span>
+          <span class="board__status" data-state="ontime">
+            <span class="board__status-text">On time</span>
+            <span class="board__arrow" aria-hidden="true">→</span>
+          </span>
+        </a>
+      </li>
+    ))}
+  </ul>
+</section>
+
+<style>
+  .board {
+    background: var(--board-bg);
+    border: 1px solid #000;
+    border-radius: var(--radius-lg);
+    padding: clamp(0.9rem, 2.6vw, 1.6rem) clamp(0.9rem, 2.6vw, 1.9rem) clamp(0.6rem, 2vw, 1rem);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.05),
+      0 40px 70px -40px rgba(0, 0, 0, 0.6);
+    --col: 4.6rem 1fr auto;
+  }
+
+  .board__marquee {
+    display: flex;
+    align-items: baseline;
+    gap: 0.9rem;
+    padding-bottom: 0.85rem;
+    font-family: var(--font-mono);
+  }
+  .board__brand {
+    color: var(--board-amber);
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    font-size: 0.82rem;
+  }
+  .board__depart {
+    color: var(--board-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.24em;
+    font-size: 0.66rem;
+  }
+  .board__clock {
+    margin-left: auto;
+    color: var(--board-text);
+    letter-spacing: 0.1em;
+    font-size: 0.82rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .board__head {
+    display: grid;
+    grid-template-columns: var(--col);
+    gap: clamp(0.6rem, 2vw, 1.4rem);
+    padding: 0 0.4rem 0.7rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--board-dim);
+  }
+  .board__head-status { text-align: right; }
+
+  .board__rows { list-style: none; margin: 0; padding: 0; }
+  .board__row + .board__row { border-top: 1px solid rgba(255, 255, 255, 0.055); }
+
+  .board__link {
+    display: grid;
+    grid-template-columns: var(--col);
+    gap: clamp(0.6rem, 2vw, 1.4rem);
+    align-items: center;
+    padding: clamp(0.6rem, 1.7vw, 1rem) 0.4rem;
+    color: var(--board-text);
+    border-radius: 6px;
+    transition: background 200ms;
+  }
+  .board__link:hover,
+  .board__link:focus-visible { background: rgba(255, 255, 255, 0.035); outline: none; }
+  .board__link:focus-visible { box-shadow: inset 0 0 0 1px rgba(230, 161, 58, 0.5); }
+
+  .board__flight {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    color: var(--board-amber);
+    white-space: nowrap;
+    align-self: center;
+  }
+
+  .board__dest { min-width: 0; }
+  .board__flaps { display: flex; flex-wrap: wrap; gap: 3px; }
+
+  .flap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: clamp(0.82em, 2.2vw, 1.15em);
+    padding: 0.14em 0.05em;
+    font-family: var(--font-mono);
+    font-weight: 500;
+    font-size: clamp(1.05rem, 3.2vw, 1.85rem);
+    line-height: 1;
+    color: var(--board-text);
+    background: linear-gradient(var(--board-slat) 0 calc(50% - 0.5px), #14110b calc(50% + 0.5px) 100%);
+    border-radius: 3px;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.55);
+    position: relative;
+    transform-origin: center bottom;
+    animation: flapIn 520ms var(--ease-flap) backwards;
+    animation-delay: calc(var(--row, 0) * 130ms + var(--i, 0) * 34ms);
+  }
+  .flap::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; top: 50%;
+    height: 1px;
+    background: rgba(0, 0, 0, 0.5);
+    transform: translateY(-0.5px);
+  }
+  @keyframes flapIn {
+    0% { transform: rotateX(-90deg); opacity: 0; }
+    55% { transform: rotateX(12deg); opacity: 1; }
+    100% { transform: rotateX(0); }
+  }
+
+  .board__note {
+    display: block;
+    margin-top: 0.4rem;
+    font-family: var(--font-mono);
+    font-size: 0.64rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--board-dim);
+  }
+
+  .board__status {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.55rem;
+    font-family: var(--font-mono);
+    white-space: nowrap;
+    align-self: center;
+  }
+  .board__status-text {
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0.25rem 0.5rem;
+    border-radius: 3px;
+    transform-origin: center;
+  }
+  .board__status[data-state="ontime"] .board__status-text { color: #86d2a1; background: rgba(127, 206, 155, 0.11); }
+  .board__status[data-state="boarding"] .board__status-text { color: #14110b; background: var(--board-amber); font-weight: 500; }
+  .board__status[data-state="delayed"] .board__status-text { color: #e6a13a; background: rgba(230, 161, 58, 0.13); }
+  .board__status[data-state="late"] .board__status-text { color: #ef7d63; background: rgba(232, 115, 90, 0.15); }
+  .board__status.is-flipping .board__status-text { animation: statusFlip 420ms var(--ease-flap); }
+  @keyframes statusFlip {
+    0% { transform: rotateX(0); }
+    49% { transform: rotateX(90deg); opacity: 0.35; }
+    50% { opacity: 1; }
+    100% { transform: rotateX(0); }
+  }
+
+  .board__arrow { color: var(--board-amber); transition: transform 200ms; }
+  .board__link:hover .board__arrow { transform: translateX(4px); }
+
+  /* Narrow screens: drop the flight column, tighten */
+  @media (max-width: 560px) {
+    .board { --col: 1fr auto; }
+    .board__flight { display: none; }
+    .board__head { grid-template-columns: 1fr auto; }
+    .board__head span:first-child { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .flap { animation: none; }
+    .board__status.is-flipping .board__status-text { animation: none; }
+  }
+</style>
+
+<script>
+  // Live clock
+  const clock = document.getElementById('board-clock');
+  const tick = () => {
+    if (!clock) return;
+    const d = new Date();
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    clock.textContent = `${hh}:${mm}`;
+  };
+  tick();
+  window.setInterval(tick, 15000);
+
+  // Board selection: chosen row -> BOARDING, others -> DELAYED / LATE, then go.
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const links = Array.from(document.querySelectorAll('.board__link')) as HTMLAnchorElement[];
+
+  const setStatus = (link: HTMLAnchorElement, text: string, state: string) => {
+    const wrap = link.querySelector('.board__status');
+    const label = link.querySelector('.board__status-text');
+    if (!wrap || !label) return;
+    wrap.setAttribute('data-state', state);
+    label.textContent = text;
+    wrap.classList.remove('is-flipping');
+    void (wrap as HTMLElement).offsetWidth; // restart animation
+    wrap.classList.add('is-flipping');
+  };
+
+  links.forEach((link) => {
+    link.addEventListener('click', (e) => {
+      const me = e as MouseEvent;
+      if (me.metaKey || me.ctrlKey || me.shiftKey || me.altKey || me.button !== 0) return;
+      e.preventDefault();
+      const href = link.getAttribute('href') || '/';
+      links.forEach((other, idx) => {
+        if (other === link) setStatus(other, 'Boarding', 'boarding');
+        else setStatus(other, idx % 2 === 0 ? 'Delayed' : 'Late', idx % 2 === 0 ? 'delayed' : 'late');
+      });
+      const go = () => (window.location.href = href);
+      if (reduce) go();
+      else window.setTimeout(go, 780);
+    });
+  });
+</script>
