@@ -1,0 +1,33 @@
+---
+import Base from '../../layouts/Base.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import { getCollection, render } from 'astro:content';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('entries', ({ data }) => !data.draft);
+  return entries.map((entry) => ({ params: { slug: entry.id }, props: { entry } }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+const fmt = (d: Date) =>
+  d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+---
+<Base title={`${entry.data.title} — ER5Labs`} description={entry.data.summary}>
+  <main id="main">
+    <PageHeader
+      kicker={fmt(entry.data.date)}
+      title={entry.data.title}
+      back={{ href: '/entries', label: 'Entries' }}
+    />
+    <div class="container section--tight">
+      <article class="prose entry">
+        <Content />
+      </article>
+    </div>
+  </main>
+</Base>
+
+<style>
+  .entry { max-width: var(--measure); }
+</style>

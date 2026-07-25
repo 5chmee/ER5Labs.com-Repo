@@ -1,0 +1,108 @@
+---
+import Base from '../../layouts/Base.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import { projects } from '../../data/projects';
+
+export function getStaticPaths() {
+  return projects.map((p) => ({ params: { slug: p.slug }, props: { project: p } }));
+}
+const { project } = Astro.props;
+---
+<Base title={`${project.title} — ER5Labs`} description={project.blurb}>
+  <main id="main">
+    <PageHeader
+      kicker={`Project · ${project.year}`}
+      title={project.title}
+      lead={project.blurb}
+      back={{ href: '/projects', label: 'Projects' }}
+    />
+    <div class="container section--tight detail">
+      {project.url && (
+        <a class="detail__live" href={project.url} target="_blank" rel="noopener noreferrer">
+          Visit the live project <span aria-hidden="true">&#8599;</span>
+        </a>
+      )}
+
+      <div class="detail__grid">
+        <div class="prose detail__body">
+          {project.summary.map((para) => <p>{para}</p>)}
+        </div>
+        <aside class="detail__aside">
+          <div class="detail__block">
+            <p class="eyebrow">Status</p>
+            <p class="detail__val">{project.status}</p>
+          </div>
+          <div class="detail__block">
+            <p class="eyebrow">Tools</p>
+            <ul class="tags">{project.tools.map((t) => <li>{t}</li>)}</ul>
+          </div>
+          <div class="detail__block">
+            <p class="eyebrow">Skills</p>
+            <ul class="tags">{project.skills.map((s) => <li>{s}</li>)}</ul>
+          </div>
+        </aside>
+      </div>
+
+      {project.media && project.media.length > 0 ? (
+        <div class="detail__media">
+          {project.media.map((m) =>
+            m.type === 'image' ? (
+              <img src={m.src} alt={m.alt ?? ''} loading="lazy" />
+            ) : (
+              <video src={m.src} controls playsinline></video>
+            )
+          )}
+        </div>
+      ) : (
+        <div class="detail__media detail__media--empty">
+          <p>
+            Media placeholder — add photos, videos, or animations for this project in
+            <code>src/data/projects.ts</code>.
+          </p>
+        </div>
+      )}
+    </div>
+  </main>
+</Base>
+
+<style>
+  .detail__live {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    padding: 0.6rem 1.05rem;
+    border-radius: var(--radius);
+    background: var(--accent);
+    color: var(--on-accent);
+    font-weight: 600;
+    font-size: var(--step--1);
+    transition: background var(--transition), transform var(--transition);
+  }
+  .detail__live:hover { background: var(--accent-2); transform: translateY(-2px); }
+
+  .detail__grid { display: grid; gap: 2.5rem; }
+  @media (min-width: 780px) {
+    .detail__grid { grid-template-columns: 1fr 15rem; gap: 3.5rem; }
+  }
+  .detail__body { max-width: 40rem; }
+  .detail__aside { display: grid; gap: 1.5rem; align-content: start; }
+  .detail__block .eyebrow { display: block; margin-bottom: 0.6rem; }
+  .detail__val { color: var(--ink); }
+
+  .detail__media { margin-top: 3rem; display: grid; gap: 1rem; }
+  .detail__media img, .detail__media video {
+    width: 100%;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--line);
+  }
+  .detail__media--empty {
+    padding: 3rem 1.5rem;
+    text-align: center;
+    color: var(--muted);
+    background: var(--bg-2);
+    border: 1px dashed var(--line-2);
+    border-radius: var(--radius-lg);
+  }
+  .detail__media--empty code { font-family: var(--font-mono); color: var(--accent); }
+</style>

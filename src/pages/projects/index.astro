@@ -1,10 +1,75 @@
 ---
 import Base from '../../layouts/Base.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import { projects } from '../../data/projects';
 ---
 <Base title="Projects — ER5Labs" description="Projects Emad Rafiq builds, controls, or contributes to.">
-  <main id="main" class="section container">
-    <p class="eyebrow">Projects</p>
-    <h1 style="margin-top:0.75rem;">Projects</h1>
-    <p class="measure" style="color:var(--ink-2); margin-top:1rem;">Coming together in the next build stage.</p>
+  <main id="main">
+    <PageHeader
+      kicker="ER5Labs — Departures"
+      title="Projects"
+      lead="Websites and work I build, control, or contribute to. This hub links out to all of them."
+    />
+    <div class="container section--tight">
+      <ul class="proj">
+        {projects.map((p) => (
+          <li>
+            <a class="proj__item" href={`/projects/${p.slug}`}>
+              <span class="proj__row">
+                <span class="proj__title">{p.title}</span>
+                <span class="proj__meta">{p.year} &middot; {p.status}</span>
+              </span>
+              <span class="proj__blurb">{p.blurb}</span>
+              <ul class="tags proj__tags">{p.tags.map((t) => <li>{t}</li>)}</ul>
+              <span class="proj__arrow" aria-hidden="true">&rarr;</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
   </main>
 </Base>
+
+<style>
+  .proj { list-style: none; margin: 0; padding: 0; }
+  .proj__item {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.35rem 1.5rem;
+    padding: clamp(1.25rem, 3vw, 1.9rem) 0;
+    border-top: 1px solid var(--line);
+    color: var(--ink);
+    transition: color var(--transition);
+  }
+  .proj li:last-child .proj__item { border-bottom: 1px solid var(--line); }
+  .proj__row {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+  }
+  .proj__title { font-size: var(--step-2); font-weight: 600; letter-spacing: -0.02em; }
+  .proj__meta {
+    font-family: var(--font-mono);
+    font-size: var(--step--1);
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .proj__blurb { grid-column: 1 / -1; color: var(--ink-2); max-width: 46rem; }
+  .proj__tags { grid-column: 1 / -1; margin-top: 0.5rem; }
+  .proj__arrow {
+    position: absolute;
+    right: 0;
+    bottom: clamp(1.25rem, 3vw, 1.9rem);
+    color: var(--accent);
+    opacity: 0;
+    transform: translateX(-4px);
+    transition: opacity var(--transition), transform var(--transition);
+  }
+  .proj__item:hover { color: var(--accent); }
+  .proj__item:hover .proj__title { color: var(--accent); }
+  .proj__item:hover .proj__arrow { opacity: 1; transform: translateX(0); }
+</style>

@@ -1,10 +1,60 @@
 ---
 import Base from '../layouts/Base.astro';
+import PageHeader from '../components/PageHeader.astro';
+import { skillGroups } from '../data/skills';
 ---
 <Base title="Skills — ER5Labs" description="Tools and technologies Emad Rafiq works with.">
-  <main id="main" class="section container">
-    <p class="eyebrow">Skills</p>
-    <h1 style="margin-top:0.75rem;">Skills</h1>
-    <p class="measure" style="color:var(--ink-2); margin-top:1rem;">Coming together in the next build stage.</p>
+  <main id="main">
+    <PageHeader
+      kicker="ER5Labs — Departures"
+      title="Skills"
+      lead="What I work with, and where I'm growing."
+    />
+    <div class="container section--tight">
+      <div class="skills">
+        {skillGroups.map((g) => (
+          <section class="skills__group">
+            <div class="skills__head">
+              <h2 class="skills__cat">{g.category}</h2>
+              {g.note && <p class="skills__note">{g.note}</p>}
+            </div>
+            <ul class="skills__list">
+              {g.items.map((i) => <li>{i}</li>)}
+            </ul>
+          </section>
+        ))}
+      </div>
+    </div>
   </main>
 </Base>
+
+<style>
+  .skills { display: grid; gap: 0; }
+  .skills__group {
+    display: grid;
+    gap: 0.75rem 2.5rem;
+    padding: clamp(1.5rem, 4vw, 2.25rem) 0;
+    border-top: 1px solid var(--line);
+  }
+  .skills__group:last-child { border-bottom: 1px solid var(--line); }
+  @media (min-width: 720px) {
+    .skills__group { grid-template-columns: 14rem 1fr; }
+  }
+  .skills__cat { font-size: var(--step-1); }
+  .skills__note { margin-top: 0.35rem; color: var(--muted); font-size: var(--step--1); }
+  .skills__list {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+  }
+  .skills__list li {
+    padding: 0.5rem 0.9rem;
+    border: 1px solid var(--line-2);
+    border-radius: var(--radius);
+    background: var(--surface);
+    font-size: var(--step--1);
+  }
+</style>

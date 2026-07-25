@@ -1,10 +1,55 @@
 ---
 import Base from '../layouts/Base.astro';
+import PageHeader from '../components/PageHeader.astro';
+import { experience } from '../data/experience';
 ---
 <Base title="Experience — ER5Labs" description="Emad Rafiq's career and work history.">
-  <main id="main" class="section container">
-    <p class="eyebrow">Experience</p>
-    <h1 style="margin-top:0.75rem;">Experience</h1>
-    <p class="measure" style="color:var(--ink-2); margin-top:1rem;">Coming together in the next build stage.</p>
+  <main id="main">
+    <PageHeader
+      kicker="ER5Labs — Departures"
+      title="Experience"
+      lead="Where I've worked and what I've built along the way."
+    />
+    <div class="container section--tight">
+      <ol class="xp">
+        {experience.map((r) => (
+          <li class="xp__item">
+            <div class="xp__period">{r.period}</div>
+            <div class="xp__body">
+              <h2 class="xp__role">{r.role} <span class="xp__org">&middot; {r.org}</span></h2>
+              <p class="xp__summary">{r.summary}</p>
+              {r.tags && r.tags.length > 0 && (
+                <ul class="tags xp__tags">{r.tags.map((t) => <li>{t}</li>)}</ul>
+              )}
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
   </main>
 </Base>
+
+<style>
+  .xp { list-style: none; margin: 0; padding: 0; }
+  .xp__item {
+    display: grid;
+    gap: 0.5rem 2.5rem;
+    padding: clamp(1.5rem, 4vw, 2.25rem) 0;
+    border-top: 1px solid var(--line);
+  }
+  .xp__item:last-child { border-bottom: 1px solid var(--line); }
+  @media (min-width: 720px) {
+    .xp__item { grid-template-columns: 10rem 1fr; }
+  }
+  .xp__period {
+    font-family: var(--font-mono);
+    font-size: var(--step--1);
+    letter-spacing: 0.02em;
+    color: var(--accent);
+    padding-top: 0.3rem;
+  }
+  .xp__role { font-size: var(--step-1); }
+  .xp__org { color: var(--muted); font-weight: 400; }
+  .xp__summary { margin-top: 0.6rem; color: var(--ink-2); max-width: 42rem; }
+  .xp__tags { margin-top: 0.9rem; }
+</style>

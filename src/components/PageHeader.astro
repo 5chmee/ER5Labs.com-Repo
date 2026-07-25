@@ -1,0 +1,38 @@
+---
+interface Props {
+  kicker: string;
+  title: string;
+  lead?: string;
+  back?: { href: string; label: string };
+}
+const { kicker, title, lead, back } = Astro.props;
+---
+<header class="pagehead container">
+  {back && (
+    <a class="pagehead__back link-underline" href={back.href}>&larr; {back.label}</a>
+  )}
+  <p class="eyebrow">{kicker}</p>
+  <h1 class="pagehead__title">{title}</h1>
+  {lead && <p class="pagehead__lead measure">{lead}</p>}
+</header>
+
+<style>
+  .pagehead {
+    padding-top: clamp(3rem, 9vh, 5.5rem);
+    padding-bottom: clamp(1.5rem, 4vh, 2.5rem);
+  }
+  .pagehead__back {
+    display: inline-block;
+    margin-bottom: 1.5rem;
+    font-family: var(--font-mono);
+    font-size: var(--step--1);
+  }
+  .eyebrow { display: block; margin-bottom: 0.85rem; }
+  .pagehead__title { font-size: var(--step-3); }
+  .pagehead__lead {
+    margin-top: 1.15rem;
+    color: var(--ink-2);
+    font-size: var(--step-1);
+    line-height: 1.45;
+  }
+</style>
