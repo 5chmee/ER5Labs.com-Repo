@@ -36,10 +36,10 @@ export const destinations: Destination[] = [
 // A few recent/current things surfaced on the homepage.
 export const recent = [
   {
-    title: 'Secure AI for firms',
-    note: "A private, confidential AI tool I'm building for a client's team.",
-    href: '/projects/secure-ai-for-firms',
-    status: 'In progress',
+    title: 'Private and Confidential AI Processing Tool',
+    note: "A private AI tool I'm building for a client's team.",
+    href: '/projects/confidential-ai-tool',
+    status: 'Live',
   },
   {
     title: 'ER5Labs.com',
