@@ -1,19 +1,14 @@
 ---
-// Placeholder home page — replaced in the next build stage with the
-// departure-board hero, about blurb, recent work, and contact.
-const title = 'ER5Labs';
+import Base from '../layouts/Base.astro';
 ---
-
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{title}</title>
-  </head>
-  <body>
-    <main>
-      <h1>ER5Labs — scaffold running</h1>
-      <p>Astro is up. The real site is built next.</p>
-    </main>
-  </body>
-</html>
+<Base>
+  <main id="main" class="section container">
+    <p class="eyebrow">Personal hub &amp; portfolio</p>
+    <h1 style="margin-top:0.75rem;">ER5Labs</h1>
+    <p class="measure" style="color:var(--ink-2); margin-top:1.25rem; font-size:var(--step-1);">
+      Chrome check — pull the lamp cord (top-right) to switch light/dark, and hover
+      the rail on the left to navigate. The departure board and full homepage land
+      in the next stage.
+    </p>
+  </main>
+</Base>

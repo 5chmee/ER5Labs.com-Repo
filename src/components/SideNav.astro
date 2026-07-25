@@ -1,0 +1,151 @@
+---
+// Hover-expand side navigation. Expanded at the top of the page; collapses to a
+// slim rail once the visitor scrolls; expands again on hover/focus. On narrow
+// screens it becomes a horizontal top bar.
+const items = [
+  { href: '/', label: 'Home' },
+  { href: '/projects', label: 'Projects' },
+  { href: '/skills', label: 'Skills' },
+  { href: '/experience', label: 'Experience' },
+  { href: '/entries', label: 'Entries' },
+  { href: '/playground', label: 'Playground' },
+];
+const path = Astro.url.pathname.replace(/\/+$/, '') || '/';
+---
+<nav class="sidenav" aria-label="Primary" data-scrolled="false">
+  <div class="sidenav__panel">
+    <ul class="sidenav__list">
+      {items.map((it) => {
+        const target = it.href.replace(/\/+$/, '') || '/';
+        const active = target === '/' ? path === '/' : (path === target || path.startsWith(target + '/'));
+        return (
+          <li>
+            <a href={it.href} class:list={["sidenav__link", { 'is-active': active }]} aria-current={active ? 'page' : undefined}>
+              <span class="sidenav__dot" aria-hidden="true"></span>
+              <span class="sidenav__label">{it.label}</span>
+            </a>
+          </li>
+        );
+      })}
+    </ul>
+  </div>
+</nav>
+
+<style>
+  .sidenav {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 140;
+    display: flex;
+    align-items: center;
+    padding-left: 0.5rem;
+    pointer-events: none;
+  }
+  .sidenav__panel {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    padding: 0.5rem;
+    border: 1px solid transparent;
+    border-radius: var(--radius-lg);
+    background: transparent;
+    transition: background var(--transition), border-color var(--transition), box-shadow var(--transition);
+  }
+  .sidenav__list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0;
+    margin: 0;
+  }
+  .sidenav__link {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.5rem 0.6rem;
+    border-radius: var(--radius);
+    color: var(--ink-2);
+    font-size: var(--step--1);
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    transition: color var(--transition), background var(--transition);
+  }
+  .sidenav__dot {
+    flex: 0 0 auto;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--line-2);
+    transition: background var(--transition), transform var(--transition);
+  }
+  .sidenav__label {
+    max-width: 0;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateX(-4px);
+    transition: max-width var(--transition), opacity var(--transition), transform var(--transition);
+  }
+  .sidenav__link:hover { color: var(--ink); }
+  .sidenav__link:hover .sidenav__dot { background: var(--accent); }
+  .sidenav__link.is-active { color: var(--ink); }
+  .sidenav__link.is-active .sidenav__dot {
+    background: var(--accent);
+    transform: scale(1.35);
+  }
+
+  /* Expanded: at top of page, or on hover/focus */
+  .sidenav[data-scrolled="false"] .sidenav__panel,
+  .sidenav__panel:hover,
+  .sidenav__panel:focus-within {
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
+    border-color: var(--line);
+    box-shadow: 0 10px 34px rgba(0, 0, 0, 0.10);
+    backdrop-filter: blur(10px);
+  }
+  .sidenav[data-scrolled="false"] .sidenav__label,
+  .sidenav__panel:hover .sidenav__label,
+  .sidenav__panel:focus-within .sidenav__label {
+    max-width: 12rem;
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  /* Mobile: horizontal top bar */
+  @media (max-width: 899px) {
+    .sidenav {
+      inset: 0 0 auto 0;
+      align-items: stretch;
+      padding: 0.4rem 0.5rem;
+      justify-content: center;
+      background: color-mix(in srgb, var(--bg) 85%, transparent);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+    }
+    .sidenav__panel { width: 100%; justify-content: center; padding: 0; }
+    .sidenav__list {
+      flex-direction: row;
+      gap: 0.1rem;
+      overflow-x: auto;
+      max-width: 100%;
+      scrollbar-width: none;
+    }
+    .sidenav__list::-webkit-scrollbar { display: none; }
+    .sidenav__dot { display: none; }
+    .sidenav__label {
+      max-width: none;
+      opacity: 1;
+      transform: none;
+      padding: 0 0.2rem;
+    }
+    .sidenav__link { padding: 0.5rem 0.7rem; }
+  }
+</style>
+
+<script>
+  const nav = document.querySelector('.sidenav');
+  const onScroll = () => nav && nav.setAttribute('data-scrolled', String(window.scrollY > 48));
+  onScroll();
+  window.addEventListener('scroll', onScroll, { passive: true });
+</script>

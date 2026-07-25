@@ -1,0 +1,82 @@
+---
+// Pull-cord lamp — hangs from the top-right and toggles light/dark.
+// Default is light; the choice is remembered in localStorage.
+---
+<div class="lamp">
+  <button
+    type="button"
+    class="lamp__cord"
+    id="lamp-toggle"
+    aria-label="Toggle light or dark theme"
+    aria-pressed="false"
+    title="Pull to switch the lights"
+  >
+    <span class="lamp__wire" aria-hidden="true"></span>
+    <span class="lamp__knob" aria-hidden="true"></span>
+  </button>
+</div>
+
+<style>
+  .lamp {
+    position: fixed;
+    top: 0;
+    right: clamp(1.1rem, 5vw, 3.25rem);
+    z-index: 150;
+    pointer-events: none;
+  }
+  .lamp__cord {
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: none;
+    border: 0;
+    padding: 0 0.9rem 1rem;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .lamp__wire {
+    width: 2px;
+    height: clamp(2.4rem, 7vh, 4.5rem);
+    background: linear-gradient(var(--line-2), var(--muted));
+    border-radius: 2px;
+    transition: height 420ms var(--ease-flap);
+  }
+  .lamp__knob {
+    width: 15px;
+    height: 26px;
+    margin-top: -1px;
+    border-radius: 8px;
+    background: radial-gradient(circle at 50% 28%, var(--board-amber), #b0731d 72%);
+    box-shadow: 0 2px 7px rgba(0, 0, 0, 0.22), inset 0 1px 1px rgba(255, 255, 255, 0.4);
+    transition: transform 420ms var(--ease-flap);
+  }
+  .lamp__cord:hover .lamp__knob { transform: translateY(4px); }
+  .lamp.is-pulling .lamp__knob { transform: translateY(11px); }
+  .lamp.is-pulling .lamp__wire { height: calc(clamp(2.4rem, 7vh, 4.5rem) + 11px); }
+
+  :root[data-theme="dark"] .lamp__knob {
+    background: radial-gradient(circle at 50% 28%, #ffd784, var(--board-amber) 72%);
+    box-shadow: 0 0 16px 2px rgba(230, 161, 58, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.5);
+  }
+</style>
+
+<script>
+  const lamp = document.querySelector('.lamp');
+  const btn = document.getElementById('lamp-toggle');
+  const root = document.documentElement;
+
+  const isDark = () => root.getAttribute('data-theme') === 'dark';
+  const sync = () => btn && btn.setAttribute('aria-pressed', String(isDark()));
+  sync();
+
+  btn?.addEventListener('click', () => {
+    const next = isDark() ? 'light' : 'dark';
+    if (next === 'dark') root.setAttribute('data-theme', 'dark');
+    else root.removeAttribute('data-theme');
+    try { localStorage.setItem('er5-theme', next); } catch (e) {}
+    sync();
+    lamp?.classList.add('is-pulling');
+    window.setTimeout(() => lamp?.classList.remove('is-pulling'), 430);
+  });
+</script>
