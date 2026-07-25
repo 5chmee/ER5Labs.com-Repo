@@ -1,3 +1,6 @@
+# Portable Node runtime (installed locally so it survives this environment)
+.tools/
+
 # Dependencies
 node_modules/
 
@@ -12,6 +15,9 @@ dist/
 
 # Large local installer — does not belong in the repo
 Git-2.55.0.3-64-bit.exe
+
+# Old vanilla site — preserved locally for reference, out of the repo
+legacy/
 
 # Build guide docs — kept locally, excluded from the repo (code only)
 ER5Labs-Build-Guide.docx
