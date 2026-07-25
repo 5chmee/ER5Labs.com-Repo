@@ -177,7 +177,7 @@ const tiles = (label: string) => label.split('');
     transform: translateY(-0.5px);
   }
   /* Each character swap during the split-flap animation drops in from the top */
-  .flap.is-turning { animation: flapDrop 78ms var(--ease-flap); }
+  .flap.is-turning { animation: flapDrop 105ms var(--ease-flap); }
   @keyframes flapDrop {
     0%   { transform: rotateX(-88deg); }
     100% { transform: rotateX(0deg); }
@@ -335,8 +335,8 @@ const tiles = (label: string) => label.split('');
       const link = el.closest('.board__link') as HTMLElement | null;
       const row = parseInt(link?.style.getPropertyValue('--row') || '0', 10) || 0;
       const i = parseInt(el.style.getPropertyValue('--i') || '0', 10) || 0;
-      const spins = 7 + Math.floor(Math.random() * 9);
-      const startDelay = row * 150 + i * 55 + Math.floor(Math.random() * 40);
+      const spins = 6 + Math.floor(Math.random() * 7);
+      const startDelay = row * 210 + i * 78 + Math.floor(Math.random() * 50);
       let idx = ((targetIdx - spins) % CHARS.length + CHARS.length) % CHARS.length;
       el.textContent = nbsp(CHARS[idx]);
       const to = window.setTimeout(() => {
@@ -347,7 +347,7 @@ const tiles = (label: string) => label.split('');
           void el.offsetWidth;
           el.classList.add('is-turning');
           if (idx === targetIdx) window.clearInterval(iv);
-        }, 60);
+        }, 150);
         timers.push(iv);
       }, startDelay);
       timers.push(to);
