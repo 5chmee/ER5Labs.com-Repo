@@ -1,7 +1,6 @@
 ---
 import '../styles/global.css';
 import Lamp from '../components/Lamp.astro';
-import Powerline from '../components/Powerline.astro';
 import SideNav from '../components/SideNav.astro';
 import DepartureBoard from '../components/DepartureBoard.astro';
 
@@ -42,8 +41,8 @@ const {
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
     <Lamp />
-    <Powerline />
-    <SideNav />
+    <SideNav side="left" />
+    <SideNav side="right" mirror />
     <div class="page">
       <div class="masthead">
         <DepartureBoard />

@@ -85,19 +85,19 @@
   --accent-2:  #e08a60;
   --on-accent: #17130f;
 
-  /* Board flips to warm white on a dark page */
-  --board-bg:      #efeae0;
-  --board-slat:    #f7f3ea;
-  --board-slat-2:  #e5ded0;
-  --board-text:    #23201a;
-  --board-amber:   #b06a1c;
-  --board-dim:     #9a917f;
-  --board-line:    #d7d0c1;
-  --board-crease:  rgba(0, 0, 0, 0.13);
-  --board-rowline: rgba(0, 0, 0, 0.08);
-  --board-hover:   rgba(0, 0, 0, 0.04);
-  --board-inlay:   rgba(0, 0, 0, 0.06);
-  --board-on-amber:#fbf6ec;
+  /* Board flips to a muted warm parchment on a dark page (dimmer, not stark white) */
+  --board-bg:      #d7d0c1;
+  --board-slat:    #e0d9ca;
+  --board-slat-2:  #c9c1b1;
+  --board-text:    #201d17;
+  --board-amber:   #a5611a;
+  --board-dim:     #8c8371;
+  --board-line:    #c1b9a8;
+  --board-crease:  rgba(0, 0, 0, 0.16);
+  --board-rowline: rgba(0, 0, 0, 0.09);
+  --board-hover:   rgba(0, 0, 0, 0.05);
+  --board-inlay:   rgba(0, 0, 0, 0.07);
+  --board-on-amber:#f7f2e8;
 }
 
 /* --------------------------------------------------------------------------

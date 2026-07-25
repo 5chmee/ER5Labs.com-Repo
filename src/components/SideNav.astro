@@ -1,7 +1,15 @@
 ---
-// Side navigation — completely hidden until the pointer reaches the left edge
-// (or a link is focused), even at the top of the page. On small screens it is
-// hidden entirely; the departure board is the navigation there.
+// Side navigation — completely hidden until the pointer reaches the page edge
+// (or a link is focused), even at the top of the page. Rendered on BOTH edges
+// so a visitor can reveal it from whichever side they reach for. The right copy
+// is a pointer-only mirror (hidden from assistive tech to avoid duplicate links).
+// On small screens both are hidden; the departure board is the navigation there.
+interface Props {
+  side?: 'left' | 'right';
+  mirror?: boolean;
+}
+const { side = 'left', mirror = false } = Astro.props;
+
 const items = [
   { href: '/', label: 'Home' },
   { href: '/projects', label: 'Projects' },
@@ -12,7 +20,11 @@ const items = [
 ];
 const path = Astro.url.pathname.replace(/\/+$/, '') || '/';
 ---
-<nav class="sidenav" aria-label="Primary">
+<nav
+  class:list={["sidenav", `sidenav--${side}`]}
+  aria-label={mirror ? undefined : 'Primary'}
+  aria-hidden={mirror ? 'true' : undefined}
+>
   <div class="sidenav__zone"></div>
   <div class="sidenav__panel">
     <ul class="sidenav__list">
@@ -21,7 +33,12 @@ const path = Astro.url.pathname.replace(/\/+$/, '') || '/';
         const active = target === '/' ? path === '/' : (path === target || path.startsWith(target + '/'));
         return (
           <li>
-            <a href={it.href} class:list={["sidenav__link", { 'is-active': active }]} aria-current={active ? 'page' : undefined}>
+            <a
+              href={it.href}
+              class:list={["sidenav__link", { 'is-active': active }]}
+              aria-current={active ? 'page' : undefined}
+              tabindex={mirror ? -1 : undefined}
+            >
               <span class="sidenav__dot" aria-hidden="true"></span>
               <span class="sidenav__label">{it.label}</span>
             </a>
@@ -35,31 +52,40 @@ const path = Astro.url.pathname.replace(/\/+$/, '') || '/';
 <style>
   .sidenav {
     position: fixed;
-    inset: 0 auto 0 0;
+    top: 0;
+    bottom: 0;
     z-index: 140;
     display: flex;
     align-items: center;
   }
-  /* Invisible strip along the left edge that catches the hover */
+  .sidenav--left { left: 0; justify-content: flex-start; }
+  .sidenav--right { right: 0; justify-content: flex-end; }
+
+  /* Invisible strip along the edge that catches the hover */
   .sidenav__zone {
     position: absolute;
-    inset: 0 auto 0 0;
+    top: 0;
+    bottom: 0;
     width: 22px;
   }
+  .sidenav--left .sidenav__zone { left: 0; }
+  .sidenav--right .sidenav__zone { right: 0; }
+
   .sidenav__panel {
     position: relative;
-    margin-left: 0.6rem;
     padding: 0.5rem;
     border: 1px solid var(--line);
     border-radius: var(--radius-lg);
     background: color-mix(in srgb, var(--surface) 90%, transparent);
     box-shadow: 0 14px 40px rgba(0, 0, 0, 0.14);
     backdrop-filter: blur(10px);
-    /* Hidden by default — slid off to the left and faded out */
+    /* Hidden by default — slid off toward its own edge and faded out */
     opacity: 0;
-    transform: translateX(-118%);
     transition: transform 260ms cubic-bezier(0.4, 0, 0.2, 1), opacity 220ms ease;
   }
+  .sidenav--left .sidenav__panel { margin-left: 0.6rem; transform: translateX(-118%); }
+  .sidenav--right .sidenav__panel { margin-right: 0.6rem; transform: translateX(118%); }
+
   /* Reveal on hover of the nav (zone or panel) or keyboard focus */
   .sidenav:hover .sidenav__panel,
   .sidenav:focus-within .sidenav__panel {
@@ -88,6 +114,9 @@ const path = Astro.url.pathname.replace(/\/+$/, '') || '/';
     white-space: nowrap;
     transition: color var(--transition), background var(--transition);
   }
+  /* Mirror the row on the right so the dot sits toward the edge */
+  .sidenav--right .sidenav__link { flex-direction: row-reverse; text-align: right; }
+
   .sidenav__dot {
     flex: 0 0 auto;
     width: 7px;
