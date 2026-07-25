@@ -4,15 +4,18 @@ import { destinations } from '../data/site';
 // Split a label into individual flap tiles (one per character).
 const tiles = (label: string) => label.split('');
 ---
-<section class="board" aria-label="Departures — choose where to go">
+<section class="board" aria-label="Contents — choose where to go">
   <div class="board__marquee">
     <a class="board__brand" href="/" aria-label="ER5Labs home">ER5LABS</a>
-    <span class="board__depart">Departures</span>
-    <span class="board__clock" id="board-clock" aria-hidden="true">--:--</span>
+    <span class="board__depart">Contents</span>
+    <span class="board__meta">
+      <span class="board__weather" id="board-weather" aria-live="polite"></span>
+      <span class="board__clock" id="board-clock" aria-hidden="true">--:--</span>
+    </span>
   </div>
 
   <div class="board__head" aria-hidden="true">
-    <span>Flight</span>
+    <span>Pages</span>
     <span>Destination</span>
     <span class="board__head-status">Status</span>
   </div>
@@ -75,8 +78,24 @@ const tiles = (label: string) => label.split('');
     letter-spacing: 0.26em;
     font-size: 0.64rem;
   }
-  .board__clock {
+  .board__meta {
     margin-left: auto;
+    display: flex;
+    align-items: baseline;
+    gap: 0.85rem;
+    min-width: 0;
+  }
+  .board__weather {
+    color: var(--board-dim);
+    letter-spacing: 0.04em;
+    font-size: 0.72rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 44vw;
+  }
+  .board__weather .wx-temp { color: var(--board-amber); }
+  .board__clock {
     color: var(--board-text);
     letter-spacing: 0.1em;
     font-size: 0.8rem;
@@ -200,13 +219,6 @@ const tiles = (label: string) => label.split('');
   .board__status[data-state="pending"] .board__status-text {
     color: var(--board-dim); background: color-mix(in srgb, var(--board-dim) 16%, transparent);
   }
-  .board__status.is-flipping .board__status-text { animation: statusFlip 420ms var(--ease-flap); }
-  @keyframes statusFlip {
-    0% { transform: rotateX(0); }
-    49% { transform: rotateX(90deg); opacity: 0.35; }
-    50% { opacity: 1; }
-    100% { transform: rotateX(0); }
-  }
 
   .board__arrow { color: var(--board-amber); transition: transform 200ms; }
   .board__link:hover .board__arrow { transform: translateX(4px); }
@@ -217,60 +229,151 @@ const tiles = (label: string) => label.split('');
     .board__flight { display: none; }
     .board__head { grid-template-columns: 1fr auto; }
     .board__head span:first-child { display: none; }
+    .board__weather { display: none; }
     .board__status-text { font-size: 0.6rem; letter-spacing: 0.06em; }
   }
 
   @media (prefers-reduced-motion: reduce) {
     .flap.is-turning { animation: none; }
-    .board__status.is-flipping .board__status-text { animation: none; }
   }
 </style>
 
 <script>
-  // ---- Live clock ---------------------------------------------------------
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const pad = (n: number) => String(n).padStart(2, '0');
+
+  // ---- Clock (adjusts to the visitor's location once weather resolves) ----
   const clock = document.getElementById('board-clock');
+  let tzOffset: number | null = null; // seconds from UTC; null => device local
   const tick = () => {
     if (!clock) return;
-    const d = new Date();
-    clock.textContent = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    let hh: number, mm: number;
+    if (tzOffset === null) {
+      const d = new Date();
+      hh = d.getHours(); mm = d.getMinutes();
+    } else {
+      const d = new Date(Date.now() + tzOffset * 1000);
+      hh = d.getUTCHours(); mm = d.getUTCMinutes();
+    }
+    clock.textContent = `${pad(hh)}:${pad(mm)}`;
   };
   tick();
   window.setInterval(tick, 15000);
 
-  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // ---- Weather + location -------------------------------------------------
+  const weatherEl = document.getElementById('board-weather');
+  const WCODE: Record<number, string> = {
+    0: 'Clear', 1: 'Mainly clear', 2: 'Partly cloudy', 3: 'Overcast',
+    45: 'Fog', 48: 'Rime fog', 51: 'Light drizzle', 53: 'Drizzle', 55: 'Dense drizzle',
+    56: 'Freezing drizzle', 57: 'Freezing drizzle', 61: 'Light rain', 63: 'Rain', 65: 'Heavy rain',
+    66: 'Freezing rain', 67: 'Freezing rain', 71: 'Light snow', 73: 'Snow', 75: 'Heavy snow',
+    77: 'Snow grains', 80: 'Rain showers', 81: 'Rain showers', 82: 'Heavy showers',
+    85: 'Snow showers', 86: 'Snow showers', 95: 'Thunderstorm', 96: 'Thunderstorm', 99: 'Thunderstorm',
+  };
+  const WKEY = 'er5-weather';
 
-  // ---- Split-flap letter animation ---------------------------------------
+  const paint = (text: string) => { if (weatherEl) weatherEl.innerHTML = text; };
+
+  const showCached = (): boolean => {
+    try {
+      const c = JSON.parse(sessionStorage.getItem(WKEY) || 'null');
+      if (c && Date.now() - c.ts < 15 * 60 * 1000) {
+        if (typeof c.offset === 'number') { tzOffset = c.offset; tick(); }
+        if (c.text) paint(c.text);
+        return true;
+      }
+    } catch (e) {}
+    return false;
+  };
+
+  const loadWeather = async (lat: number, lon: number) => {
+    try {
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=auto`;
+      const j = await (await fetch(url)).json();
+      if (!j || !j.current) return;
+      if (typeof j.utc_offset_seconds === 'number') { tzOffset = j.utc_offset_seconds; tick(); }
+      const temp = Math.round(j.current.temperature_2m);
+      const desc = WCODE[j.current.weather_code] || 'Weather';
+
+      let place = '';
+      try {
+        const g = await (await fetch(
+          `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`
+        )).json();
+        place = g.city || g.locality || g.principalSubdivision || '';
+      } catch (e) {}
+
+      const text = `${place ? place + ' &middot; ' : ''}<span class="wx-temp">${temp}&deg;</span> ${desc}`;
+      paint(text);
+      try {
+        sessionStorage.setItem(WKEY, JSON.stringify({ ts: Date.now(), text, offset: tzOffset }));
+      } catch (e) {}
+    } catch (e) { /* leave the weather blank on failure */ }
+  };
+
+  if (!showCached() && 'geolocation' in navigator) {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => loadWeather(pos.coords.latitude, pos.coords.longitude),
+      () => { /* permission denied — clock stays on device local time, no weather */ },
+      { timeout: 8000, maximumAge: 10 * 60 * 1000 }
+    );
+  }
+
+  // ---- Split-flap letter animation (replays each time the board re-enters view)
   const CHARS = ' ABCDEFGHIJKLMNOPQRSTUVWXYZ.&0123456789';
   const nbsp = (c: string) => (c === ' ' ? ' ' : c);
-
   const flaps = Array.from(document.querySelectorAll<HTMLElement>('.flap'));
-  flaps.forEach((el) => {
-    const finalCh = (el.dataset.final || ' ').toUpperCase();
-    if (reduce || finalCh === ' ') {
-      el.textContent = nbsp(finalCh);
-      return;
-    }
-    const targetIdx = Math.max(0, CHARS.indexOf(finalCh));
-    const link = el.closest('.board__link') as HTMLElement | null;
-    const row = parseInt(link?.style.getPropertyValue('--row') || '0', 10) || 0;
-    const i = parseInt(el.style.getPropertyValue('--i') || '0', 10) || 0;
+  let timers: number[] = [];
 
-    const spins = 7 + Math.floor(Math.random() * 9);      // characters to cycle through
-    const startDelay = row * 150 + i * 55 + Math.floor(Math.random() * 40);
-    let idx = ((targetIdx - spins) % CHARS.length + CHARS.length) % CHARS.length;
+  const runFlaps = () => {
+    timers.forEach((id) => { window.clearTimeout(id); window.clearInterval(id); });
+    timers = [];
+    flaps.forEach((el) => {
+      const finalCh = (el.dataset.final || ' ').toUpperCase();
+      if (reduce || finalCh === ' ') { el.textContent = nbsp(finalCh); return; }
+      const targetIdx = Math.max(0, CHARS.indexOf(finalCh));
+      const link = el.closest('.board__link') as HTMLElement | null;
+      const row = parseInt(link?.style.getPropertyValue('--row') || '0', 10) || 0;
+      const i = parseInt(el.style.getPropertyValue('--i') || '0', 10) || 0;
+      const spins = 7 + Math.floor(Math.random() * 9);
+      const startDelay = row * 150 + i * 55 + Math.floor(Math.random() * 40);
+      let idx = ((targetIdx - spins) % CHARS.length + CHARS.length) % CHARS.length;
+      el.textContent = nbsp(CHARS[idx]);
+      const to = window.setTimeout(() => {
+        const iv = window.setInterval(() => {
+          idx = (idx + 1) % CHARS.length;
+          el.textContent = nbsp(CHARS[idx]);
+          el.classList.remove('is-turning');
+          void el.offsetWidth;
+          el.classList.add('is-turning');
+          if (idx === targetIdx) window.clearInterval(iv);
+        }, 60);
+        timers.push(iv);
+      }, startDelay);
+      timers.push(to);
+    });
+  };
 
-    el.textContent = nbsp(CHARS[idx]); // start scrambled, not on the answer
-    window.setTimeout(() => {
-      const iv = window.setInterval(() => {
-        idx = (idx + 1) % CHARS.length;
-        el.textContent = nbsp(CHARS[idx]);
-        el.classList.remove('is-turning');
-        void el.offsetWidth; // restart the flip animation
-        el.classList.add('is-turning');
-        if (idx === targetIdx) window.clearInterval(iv);
-      }, 60);
-    }, startDelay);
-  });
+  const boardEl = document.querySelector('.board');
+  if (reduce) {
+    runFlaps();
+  } else if (boardEl && 'IntersectionObserver' in window) {
+    // Prime with scrambled characters so the answer never flashes on first paint.
+    flaps.forEach((el) => {
+      const f = (el.dataset.final || ' ').toUpperCase();
+      if (f !== ' ') el.textContent = nbsp(CHARS[Math.floor(Math.random() * CHARS.length)]);
+    });
+    let visible = false;
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        if (e.isIntersecting && !visible) { visible = true; runFlaps(); }
+        else if (!e.isIntersecting && visible) { visible = false; }
+      });
+    }, { threshold: 0.25 });
+    io.observe(boardEl);
+  } else {
+    runFlaps();
+  }
 
   // ---- Status: Viewing / To be viewed / Last viewed <n> ago ---------------
   const VISIT_KEY = 'er5-visits';
@@ -316,6 +419,5 @@ const tiles = (label: string) => label.split('');
     }
   });
 
-  // Record this page's visit so it reads "Last viewed …" from elsewhere later.
   if (currentHref) { visits[currentHref] = now; writeVisits(visits); }
 </script>
