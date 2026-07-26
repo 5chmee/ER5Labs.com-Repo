@@ -23,14 +23,14 @@
   /* Departure board — INVERTS with the theme. Light page => dark board;
      dark page => light board. Every board colour is a token so they flip
      together (see the dark overrides below). This is the light-page board. */
-  --board-bg:      #2e2b27;   /* warm dark grey — softer on the eyes than near-black */
-  --board-slat:    #383430;   /* flap top half */
-  --board-slat-2:  #2a2622;   /* flap bottom half */
+  --board-bg:      #242120;   /* warm dark grey — softer on the eyes than near-black */
+  --board-slat:    #2e2b28;   /* flap top half */
+  --board-slat-2:  #201d1b;   /* flap bottom half */
   --board-text:    #ece3d1;
   --board-amber:   #e6a13a;
-  --board-dim:     #a09789;
-  --board-line:    #221f1b;   /* board border */
-  --board-crease:  rgba(0, 0, 0, 0.38);     /* flap edges + mid line */
+  --board-dim:     #9c9385;
+  --board-line:    #1a1715;   /* board border */
+  --board-crease:  rgba(0, 0, 0, 0.42);     /* flap edges + mid line */
   --board-rowline: rgba(255, 255, 255, 0.075);
   --board-hover:   rgba(255, 255, 255, 0.055);
   --board-inlay:   rgba(255, 255, 255, 0.06); /* top inner highlight */
