@@ -20,9 +20,11 @@
   --accent-2:  #a54c29;   /* accent, pressed/hover */
   --on-accent: #fffaf5;   /* text on accent */
 
-  /* Market ticker direction */
-  --up:        #1f7a4d;
-  --down:      #b0432c;
+  /* Market ticker — its own band tone so it reads as a distinct strip
+     against the page, plus the up/down directions */
+  --ticker-bg: #e9e5db;
+  --up:        #17683f;
+  --down:      #a63c26;
 
   /* Departure board — INVERTS with the theme. Light page => dark board;
      dark page => light board. Every board colour is a token so they flip
@@ -89,6 +91,7 @@
   --accent-2:  #e08a60;
   --on-accent: #17130f;
 
+  --ticker-bg: #1c1916;
   --up:        #58c98c;
   --down:      #ef7f64;
 
