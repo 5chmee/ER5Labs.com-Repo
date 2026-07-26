@@ -40,19 +40,18 @@ export const destinations: Destination[] = [
 export const noteFor = (href: string): string =>
   destinations.find((d) => d.href === href)?.note ?? '';
 
-// A few recent/current things surfaced on the homepage.
-export const recent = [
+// Projects surfaced on the homepage, newest first. Each entry is a slug from
+// src/data/projects.ts, so the title, status and tags are read from there and
+// can never drift out of step with the Projects page. `note` is optional: give
+// one for a shorter homepage line, or leave it out to reuse the project blurb.
+export const recent: { slug: string; note?: string }[] = [
   {
-    title: 'Secure AI Processing Tool for Private files',
+    slug: 'confidential-ai-tool',
     note: "A private AI tool I'm building for a client's team.",
-    href: '/projects/confidential-ai-tool',
-    status: 'In progress',
   },
   {
-    title: 'ER5Labs.com',
+    slug: 'er5labs',
     note: 'Updated whenever I ship something new.',
-    href: '/projects/er5labs',
-    status: 'Live',
   },
 ];
 

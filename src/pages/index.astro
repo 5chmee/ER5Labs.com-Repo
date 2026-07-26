@@ -2,6 +2,14 @@
 import Base from '../layouts/Base.astro';
 import LatestExperiment from '../components/LatestExperiment.astro';
 import { profile, recent } from '../data/site';
+import { projects } from '../data/projects';
+
+// Resolve each pinned slug against the project data so the title, status and
+// tags shown here are exactly the ones on the Projects page.
+const pinned = recent.flatMap((r) => {
+  const project = projects.find((p) => p.slug === r.slug);
+  return project ? [{ project, note: r.note ?? project.blurb }] : [];
+});
 ---
 <Base ticker>
   <main id="main">
@@ -25,12 +33,15 @@ import { profile, recent } from '../data/site';
         <h2 class="eyebrow">Recent &amp; Pinned Additions</h2>
         <div>
           <ul class="recent">
-            {recent.map((r) => (
+            {pinned.map(({ project, note }) => (
               <li>
-                <a href={r.href} class="recent__item">
-                  <span class="recent__title">{r.title}</span>
-                  <span class="recent__status">{r.status}</span>
-                  <span class="recent__note">{r.note}</span>
+                <a href={`/projects/${project.slug}`} class="recent__item">
+                  <span class="recent__title">{project.title}</span>
+                  <span class="recent__status">{project.status}</span>
+                  <span class="recent__note">{note}</span>
+                  <ul class="tags recent__tags">
+                    {project.tags.map((t) => <li>{t}</li>)}
+                  </ul>
                 </a>
               </li>
             ))}
@@ -95,6 +106,7 @@ import { profile, recent } from '../data/site';
   .recent li:last-child .recent__item { border-bottom: 1px solid var(--line); }
   .recent__title { font-weight: 600; font-size: var(--step-1); }
   .recent__note { grid-column: 1; color: var(--muted); font-size: var(--step--1); }
+  .recent__tags { grid-column: 1 / -1; margin-top: 0.7rem; }
   .recent__status {
     font-family: var(--font-mono);
     font-size: 0.66rem;
