@@ -22,8 +22,8 @@
 
   /* Graph-paper grid behind everything — fine lines plus a heavier one
      every fifth, like engineering paper */
-  --grid:       rgba(27, 26, 23, 0.045);
-  --grid-major: rgba(27, 26, 23, 0.075);
+  --grid:       rgba(27, 26, 23, 0.034);
+  --grid-major: rgba(27, 26, 23, 0.056);
 
   /* Market ticker — its own band tone so it reads as a distinct strip
      against the page, plus the up/down directions */
@@ -96,8 +96,8 @@
   --accent-2:  #e08a60;
   --on-accent: #17130f;
 
-  --grid:       rgba(236, 227, 209, 0.05);
-  --grid-major: rgba(236, 227, 209, 0.085);
+  --grid:       rgba(236, 227, 209, 0.0375);
+  --grid-major: rgba(236, 227, 209, 0.064);
 
   --ticker-bg: #1c1916;
   --up:        #58c98c;

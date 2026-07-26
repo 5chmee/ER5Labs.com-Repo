@@ -1,0 +1,170 @@
+---
+// Split-flap toy: type anything and the tiles turn over to spell it, the same
+// way the departure board on the homepage does.
+//
+// Tiles are rendered here (not built in JS) so the scoped styles below apply
+// to them; the script only changes each tile's character.
+const TILES = 10;
+const START = 'ER5LABS';
+const presets = ['ER5LABS', 'PORTFOLIO', 'COMPOUND', 'GOLDEN'];
+---
+<div class="toy">
+  <div class="toy__board" id="toy-board" aria-live="polite" aria-label="Split-flap display">
+    {Array.from({ length: TILES }).map((_, i) => (
+      <span class="toy__flap" data-final={START[i] ?? ' '}>{START[i] ?? ' '}</span>
+    ))}
+  </div>
+
+  <div class="toy__controls">
+    <label class="toy__field">
+      <span class="sr-only">Type something for the board to spell</span>
+      <input
+        id="toy-input"
+        type="text"
+        maxlength={TILES}
+        value={START}
+        autocomplete="off"
+        spellcheck="false"
+        placeholder="Type here"
+      />
+    </label>
+    <div class="toy__presets">
+      {presets.map((p) => (
+        <button type="button" class="toy__preset" data-word={p}>{p}</button>
+      ))}
+    </div>
+  </div>
+</div>
+
+<style>
+  .toy { display: grid; gap: 1rem; }
+
+  .toy__board {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: clamp(0.7rem, 2.5vw, 1.1rem);
+    background: var(--board-bg);
+    border: 1px solid var(--board-line);
+    border-radius: var(--radius-lg);
+    perspective: 400px;
+    transition: background var(--transition), border-color var(--transition);
+  }
+  .toy__flap {
+    flex: 1 1 auto;
+    min-width: 1.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.3em 0.1em;
+    font-family: var(--font-mono);
+    font-weight: 500;
+    font-size: clamp(1.1rem, 4.5vw, 1.9rem);
+    line-height: 1;
+    color: var(--board-text);
+    background: linear-gradient(
+      var(--board-slat) 0 calc(50% - 0.5px),
+      var(--board-slat-2) calc(50% + 0.5px) 100%
+    );
+    border-radius: 3px;
+    box-shadow: inset 0 0 0 1px var(--board-crease);
+    position: relative;
+    transform-origin: center top;
+    backface-visibility: hidden;
+  }
+  .toy__flap::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; top: 50%;
+    height: 1px;
+    background: var(--board-crease);
+    transform: translateY(-0.5px);
+  }
+
+  .toy__controls { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; }
+  .toy__field { flex: 1 1 12rem; }
+  .toy__field input {
+    width: 100%;
+    padding: 0.6rem 0.85rem;
+    font-family: var(--font-mono);
+    font-size: var(--step--1);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--line-2);
+    border-radius: var(--radius);
+  }
+  .toy__field input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .toy__presets { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .toy__preset {
+    padding: 0.45rem 0.7rem;
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.1em;
+    color: var(--ink-2);
+    background: transparent;
+    border: 1px solid var(--line-2);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: color var(--transition), border-color var(--transition);
+  }
+  .toy__preset:hover { color: var(--accent); border-color: var(--accent); }
+</style>
+
+<script>
+  const board = document.getElementById('toy-board');
+  const input = document.getElementById('toy-input') as HTMLInputElement | null;
+  if (board && input) {
+    const CHARS = ' ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.&';
+    const flaps = Array.from(board.querySelectorAll<HTMLElement>('.toy__flap'));
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const timers = new Map<HTMLElement, number>();
+
+    const spinTo = (el: HTMLElement, target: string, delay: number) => {
+      const t = CHARS.indexOf(target) < 0 ? 0 : CHARS.indexOf(target);
+      const existing = timers.get(el);
+      if (existing) window.clearInterval(existing);
+
+      if (reduce) {
+        el.textContent = CHARS[t] === ' ' ? ' ' : CHARS[t];
+        return;
+      }
+
+      let idx = CHARS.indexOf((el.textContent || ' ').trim() || ' ');
+      if (idx < 0) idx = 0;
+      if (idx === t) return;
+
+      window.setTimeout(() => {
+        const iv = window.setInterval(() => {
+          idx = (idx + 1) % CHARS.length;
+          el.textContent = CHARS[idx] === ' ' ? ' ' : CHARS[idx];
+          const last = idx === t;
+          el.animate(
+            [{ transform: 'rotateX(-90deg)' }, { transform: 'rotateX(0deg)' }],
+            {
+              duration: last ? 300 : 130,
+              easing: last ? 'cubic-bezier(0.22, 1, 0.36, 1)' : 'linear',
+            }
+          );
+          if (last) { window.clearInterval(iv); timers.delete(el); }
+        }, 130);
+        timers.set(el, iv);
+      }, delay);
+    };
+
+    const show = (word: string) => {
+      const w = word.toUpperCase().slice(0, flaps.length);
+      flaps.forEach((el, i) => spinTo(el, w[i] ?? ' ', i * 70));
+    };
+
+    input.addEventListener('input', () => show(input.value));
+    document.querySelectorAll<HTMLButtonElement>('.toy__preset').forEach((b) => {
+      b.addEventListener('click', () => {
+        input.value = b.dataset.word || '';
+        show(input.value);
+      });
+    });
+  }
+</script>

@@ -56,8 +56,6 @@ export const recent = [
   },
 ];
 
-export const interests = ['Web & digital craft', 'Minimal, human design', 'Building in the open'];
-
 // Résumé — drop your PDF at public/resume.pdf and this link will serve it.
 export const resume = {
   url: '/resume.pdf',

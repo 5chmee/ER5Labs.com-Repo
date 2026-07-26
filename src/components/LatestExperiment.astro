@@ -1,0 +1,72 @@
+---
+// ===========================================================================
+// LATEST ADDITION TO THE PLAYGROUND — shown at the bottom of the homepage.
+//
+// TO SWAP IN A NEW EXPERIMENT:
+//   1. Build it as a component in src/components/experiments/
+//   2. Change the import below to point at it
+//   3. Update the title/blurb/added values
+// That's it. The homepage picks it up automatically.
+// ===========================================================================
+import SplitFlapToy from './experiments/SplitFlapToy.astro';
+
+const title = 'Split-flap toy';
+const blurb =
+  'Type anything and the tiles turn over to spell it, the same mechanism the board at the top of this page runs on.';
+const added = 'July 2026';
+---
+<section class="latest section container band" aria-labelledby="latest-title">
+  <div class="grid2">
+    <h2 class="eyebrow" id="latest-title">Latest in the Playground</h2>
+    <div>
+      <div class="latest__head">
+        <h3 class="latest__name">{title}</h3>
+        <span class="latest__date">Added {added}</span>
+      </div>
+      <p class="latest__blurb">{blurb}</p>
+
+      <div class="latest__stage">
+        <SplitFlapToy />
+      </div>
+
+      <a class="latest__more link-underline" href="/playground">See the rest of the Playground</a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .latest { border-top: 1px solid var(--line); }
+  .grid2 { display: grid; gap: 0.9rem 2.5rem; }
+  @media (min-width: 720px) {
+    .grid2 { grid-template-columns: 9rem 1fr; }
+  }
+  .grid2 > .eyebrow { padding-top: 0.4rem; }
+
+  .latest__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.4rem 1rem;
+  }
+  .latest__name { font-size: var(--step-1); }
+  .latest__date {
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+  }
+  .latest__blurb {
+    max-width: 34rem;
+    margin-top: 0.5rem;
+    color: var(--ink-2);
+  }
+  .latest__stage { margin-top: 1.5rem; }
+  .latest__more {
+    display: inline-block;
+    margin-top: 1.35rem;
+    font-family: var(--font-mono);
+    font-size: var(--step--1);
+  }
+</style>
