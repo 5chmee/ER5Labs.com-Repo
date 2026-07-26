@@ -17,6 +17,7 @@ export type Project = {
   skills: string[];             // skills the project drew on
   summary: string[];            // paragraphs for the detail page
   media?: Media[];              // optional images/videos on the detail page
+  roughWork?: boolean;          // show the animated sketch panels at the bottom
 };
 
 export const projects: Project[] = [
@@ -51,5 +52,6 @@ export const projects: Project[] = [
       'ER5Labs is my personal brand and site. Here I display all my undertakings, whether they are for fun or assignments from my job.',
       'It is built to grow: projects, skills, experience, writing and experiments each have their own space and I will continue to update it whenever I build something new.',
     ],
+    roughWork: true,
   },
 ];

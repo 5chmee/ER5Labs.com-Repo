@@ -1,0 +1,401 @@
+---
+// "Rough work" — the sketch board at the bottom of the ER5Labs project page.
+// Ideas, discarded directions and the maths I keep coming back to. All the
+// geometry below is computed here at build time, so the curves are real
+// rather than eyeballed.
+
+// --- Fibonacci tiling (13x8) + the spiral that threads through it ----------
+const squares = [
+  { x: 3, y: 5, s: 1, n: '1' },
+  { x: 4, y: 5, s: 1, n: '1' },
+  { x: 3, y: 6, s: 2, n: '2' },
+  { x: 0, y: 5, s: 3, n: '3' },
+  { x: 0, y: 0, s: 5, n: '5' },
+  { x: 5, y: 0, s: 8, n: '8' },
+];
+
+// One quarter turn per square: centre, radius, start angle. The angle increases
+// by exactly 90 degrees each time, which is what makes the joins tangent-
+// continuous — matching endpoints alone would leave a cusp at every corner.
+const arcs = [
+  { c: [4, 6], r: 1, t0: 180 },
+  { c: [4, 6], r: 1, t0: 270 },
+  { c: [3, 6], r: 2, t0: 0 },
+  { c: [3, 5], r: 3, t0: 90 },
+  { c: [5, 5], r: 5, t0: 180 },
+  { c: [5, 8], r: 8, t0: 270 },
+];
+
+let spiral = '';
+arcs.forEach((a, i) => {
+  for (let s = 0; s <= 18; s++) {
+    const th = ((a.t0 + (90 * s) / 18) * Math.PI) / 180;
+    const x = a.c[0] + a.r * Math.cos(th);
+    const y = a.c[1] + a.r * Math.sin(th);
+    spiral += (i === 0 && s === 0 ? 'M' : ' L') + `${x.toFixed(3)} ${y.toFixed(3)}`;
+  }
+});
+
+// --- Golden ratio: rectangles that keep subdividing ------------------------
+const PHI = (1 + Math.sqrt(5)) / 2;
+const golden: { x: number; y: number; w: number; h: number; sq: number[] }[] = [];
+{
+  let x = 0,
+    y = 0,
+    w = 100,
+    h = 100 / PHI,
+    dir = 0;
+  for (let i = 0; i < 6; i++) {
+    // Cut the largest square off the rectangle; what's left is golden again.
+    const s = Math.min(w, h);
+    let sq: number[];
+    if (dir === 0) { sq = [x, y, s, s]; x += s; w -= s; }
+    else if (dir === 1) { sq = [x, y, s, s]; y += s; h -= s; }
+    else if (dir === 2) { sq = [x + w - s, y, s, s]; w -= s; }
+    else { sq = [x, y + h - s, s, s]; h -= s; }
+    golden.push({ x, y, w, h, sq });
+    dir = (dir + 1) % 4;
+  }
+}
+
+// --- Normal distribution ---------------------------------------------------
+const NX = (x: number) => ((x + 3.6) / 7.2) * 120;
+const NY = (y: number) => 54 - y * 42;
+const bell = (() => {
+  let d = '';
+  for (let i = 0; i <= 120; i++) {
+    const x = -3.6 + (7.2 * i) / 120;
+    d += (i ? ' L' : 'M') + `${NX(x).toFixed(2)} ${NY(Math.exp(-(x * x) / 2)).toFixed(2)}`;
+  }
+  return d;
+})();
+const band = (a: number, b: number) => {
+  let d = `M${NX(a).toFixed(2)} 54`;
+  for (let i = 0; i <= 48; i++) {
+    const x = a + ((b - a) * i) / 48;
+    d += ` L${NX(x).toFixed(2)} ${NY(Math.exp(-(x * x) / 2)).toFixed(2)}`;
+  }
+  return d + ` L${NX(b).toFixed(2)} 54 Z`;
+};
+---
+
+<section class="rw" aria-labelledby="rw-title">
+  <header class="rw__head">
+    <h2 class="rw__title" id="rw-title">Rough work</h2>
+    <p class="rw__lead">
+      Ideas, dead ends and the maths I keep coming back to. Everything here fed into
+      the site as it stands &mdash; some of it made the cut, some of it did not.
+    </p>
+  </header>
+
+  <div class="rw__grid">
+    <!-- 1. Iterations of the site ------------------------------------------ -->
+    <figure class="rw__panel rw__panel--wide">
+      <svg viewBox="0 0 240 96" role="img" aria-label="Three iterations of the site layout">
+        <g class="it it--1">
+          <text class="rw-tag" x="4" y="10">v01 — dark, cards</text>
+          <rect class="rw-fill-dark" x="4" y="16" width="232" height="76" rx="3" />
+          <rect class="rw-ghost" x="86" y="26" width="68" height="7" rx="2" />
+          <rect class="rw-ghost" x="98" y="38" width="44" height="4" rx="2" />
+          <rect class="rw-ghost" x="18" y="54" width="62" height="28" rx="3" />
+          <rect class="rw-ghost" x="89" y="54" width="62" height="28" rx="3" />
+          <rect class="rw-ghost" x="160" y="54" width="62" height="28" rx="3" />
+        </g>
+        <g class="it it--2">
+          <text class="rw-tag" x="4" y="10">v02 — light, editorial</text>
+          <rect class="rw-line-only" x="4" y="16" width="232" height="76" rx="3" />
+          <rect class="rw-ink" x="18" y="28" width="88" height="9" rx="2" />
+          <rect class="rw-soft" x="18" y="42" width="120" height="4" rx="2" />
+          <line class="rw-rule" x1="18" y1="56" x2="222" y2="56" />
+          <line class="rw-rule" x1="18" y1="68" x2="222" y2="68" />
+          <line class="rw-rule" x1="18" y1="80" x2="222" y2="80" />
+        </g>
+        <g class="it it--3">
+          <text class="rw-tag" x="4" y="10">v03 — departure board</text>
+          <rect class="rw-line-only" x="4" y="16" width="232" height="76" rx="3" />
+          <rect class="rw-soft" x="4" y="16" width="232" height="7" rx="2" />
+          <rect class="rw-fill-dark" x="30" y="28" width="196" height="40" rx="3" />
+          <rect class="rw-amber" x="36" y="34" width="18" height="4" rx="1" />
+          <rect class="rw-ghost" x="60" y="33" width="52" height="6" rx="1" />
+          <rect class="rw-ghost" x="60" y="43" width="52" height="6" rx="1" />
+          <rect class="rw-ghost" x="60" y="53" width="52" height="6" rx="1" />
+          <rect class="rw-amber" x="196" y="43" width="22" height="5" rx="1" />
+          <rect class="rw-soft" x="10" y="34" width="10" height="28" rx="2" />
+        </g>
+      </svg>
+      <figcaption>Three passes at the front page. The first two are why the third exists.</figcaption>
+    </figure>
+
+    <!-- 2. Bulb, wire, board ------------------------------------------------ -->
+    <figure class="rw__panel rw__panel--wide">
+      <svg viewBox="0 0 240 96" role="img" aria-label="A light bulb wired to the departure board">
+        <!-- flex/cord the bulb hangs from -->
+        <line class="rw-rule" x1="40" y1="4" x2="40" y2="24" />
+        <!-- bulb -->
+        <g class="bulb">
+          <circle class="bulb__glow" cx="40" cy="36" r="18" />
+          <circle class="bulb__glass" cx="40" cy="36" r="11" />
+          <path class="bulb__filament" d="M35 38 L37.5 32 L40 38 L42.5 32 L45 38" />
+          <rect class="bulb__cap" x="36" y="46" width="8" height="6" rx="1" />
+        </g>
+        <!-- wire from the bulb across to the board -->
+        <path
+          id="rw-wire"
+          class="wire"
+          d="M40 52 C 40 74, 66 82, 96 78 C 124 74, 132 60, 156 58"
+        />
+        <path
+          class="wire wire__flow"
+          d="M40 52 C 40 74, 66 82, 96 78 C 124 74, 132 60, 156 58"
+        />
+        <!-- the board it feeds -->
+        <rect class="rw-fill-dark" x="156" y="30" width="76" height="52" rx="3" />
+        <rect class="rw-amber" x="162" y="36" width="14" height="3" rx="1" />
+        <rect class="rw-ghost slat slat--1" x="162" y="45" width="42" height="7" rx="1" />
+        <rect class="rw-ghost slat slat--2" x="162" y="56" width="42" height="7" rx="1" />
+        <rect class="rw-ghost slat slat--3" x="162" y="67" width="42" height="7" rx="1" />
+        <circle class="rw-amber-fill spark" cx="0" cy="0" r="2.4">
+          <animateMotion dur="3.2s" repeatCount="indefinite" calcMode="linear">
+            <mpath href="#rw-wire" />
+          </animateMotion>
+        </circle>
+      </svg>
+      <figcaption>
+        The cut idea: a live wire from the lamp to the board. Too busy on the page &mdash;
+        it lives here instead.
+      </figcaption>
+    </figure>
+
+    <!-- 3. Fibonacci -------------------------------------------------------- -->
+    <figure class="rw__panel">
+      <svg viewBox="-0.6 -0.6 14.2 9.2" role="img" aria-label="Fibonacci squares and the golden spiral">
+        {squares.map((s, i) => (
+          <g class="fib" style={`--d:${i * 0.35}s`}>
+            <rect class="rw-line-only" x={s.x} y={s.y} width={s.s} height={s.s} rx="0.08" />
+            <text class="fib__n" x={s.x + s.s / 2} y={s.y + s.s / 2} font-size={Math.min(1.6, s.s * 0.62)}>{s.n}</text>
+          </g>
+        ))}
+        <path class="fib__spiral" d={spiral} />
+      </svg>
+      <figcaption>1 · 1 · 2 · 3 · 5 · 8 — the tiling, and the spiral it carries.</figcaption>
+    </figure>
+
+    <!-- 4. Golden ratio ----------------------------------------------------- -->
+    <figure class="rw__panel">
+      <svg viewBox="-3 -3 106 68" role="img" aria-label="A golden rectangle subdividing">
+        <rect class="rw-line-only" x="0" y="0" width="100" height={100 / PHI} rx="0.6" />
+        {golden.map((g, i) => (
+          <rect
+            class="gold__sq"
+            style={`--d:${i * 0.4}s`}
+            x={g.sq[0]}
+            y={g.sq[1]}
+            width={g.sq[2]}
+            height={g.sq[3]}
+            rx="0.6"
+          />
+        ))}
+        <text class="gold__phi" x="50" y="34">φ = 1.6180339…</text>
+      </svg>
+      <figcaption>Cut the square off a golden rectangle and what remains is golden again.</figcaption>
+    </figure>
+
+    <!-- 5. Normal distribution ---------------------------------------------- -->
+    <figure class="rw__panel">
+      <svg viewBox="-4 -4 128 72" role="img" aria-label="A normal distribution with one and two sigma bands">
+        <path class="nd__band nd__band--2" d={band(-2, 2)} />
+        <path class="nd__band nd__band--1" d={band(-1, 1)} />
+        <line class="rw-rule" x1="0" y1="54" x2="120" y2="54" />
+        <line class="nd__mean" x1={NX(0)} y1="10" x2={NX(0)} y2="54" />
+        <path class="nd__curve" d={bell} />
+        <text class="rw-tag nd__t" x={NX(0)} y="64" text-anchor="middle">μ</text>
+        <text class="rw-tag nd__t" x={NX(-1)} y="64" text-anchor="middle">−1σ</text>
+        <text class="rw-tag nd__t" x={NX(1)} y="64" text-anchor="middle">+1σ</text>
+        <text class="rw-tag nd__t" x={NX(-2)} y="64" text-anchor="middle">−2σ</text>
+        <text class="rw-tag nd__t" x={NX(2)} y="64" text-anchor="middle">+2σ</text>
+        <text class="nd__pct" x={NX(0)} y="30" text-anchor="middle">68%</text>
+      </svg>
+      <figcaption>68 / 95 — the shape behind most of the risk work I do.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<style>
+  .rw {
+    margin-top: clamp(3rem, 8vh, 5rem);
+    padding-top: clamp(2rem, 5vh, 3rem);
+    border-top: 1px solid var(--line);
+  }
+  .rw__head { max-width: var(--measure); margin-bottom: clamp(1.5rem, 4vh, 2.25rem); }
+  .rw__title { font-size: var(--step-2); }
+  .rw__lead { margin-top: 0.7rem; color: var(--ink-2); }
+
+  .rw__grid { display: grid; gap: 1rem; }
+  @media (min-width: 700px) {
+    .rw__grid { grid-template-columns: repeat(2, 1fr); }
+    .rw__panel--wide { grid-column: 1 / -1; }
+  }
+
+  .rw__panel {
+    margin: 0;
+    padding: clamp(0.9rem, 2.5vw, 1.25rem);
+    border: 1px dashed var(--line-2);
+    border-radius: var(--radius-lg);
+    background: var(--bg-2);
+  }
+  .rw__panel svg { width: 100%; height: auto; overflow: visible; }
+  .rw__panel figcaption {
+    margin-top: 0.85rem;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+
+  /* shared sketch primitives */
+  .rw-line-only { fill: none; stroke: var(--line-2); stroke-width: 0.9; }
+  .rw-fill-dark { fill: var(--board-bg); }
+  .rw-ghost { fill: var(--board-dim); opacity: 0.55; }
+  .rw-amber { fill: var(--board-amber); opacity: 0.9; }
+  .rw-amber-fill { fill: var(--board-amber); }
+  .rw-ink { fill: var(--ink); }
+  .rw-soft { fill: var(--line-2); }
+  .rw-rule { stroke: var(--line-2); stroke-width: 0.8; }
+  .rw-tag {
+    fill: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 7px;
+    letter-spacing: 0.08em;
+  }
+
+  /* 1. iterations cross-fade */
+  .it { opacity: 0; animation: itCycle 12s infinite; }
+  .it--1 { animation-delay: 0s; }
+  .it--2 { animation-delay: 4s; }
+  .it--3 { animation-delay: 8s; }
+  @keyframes itCycle {
+    0%, 2% { opacity: 0; }
+    5%, 30% { opacity: 1; }
+    33%, 100% { opacity: 0; }
+  }
+
+  /* 2. bulb + wire */
+  .bulb__glass { fill: var(--board-amber); opacity: 0.22; stroke: var(--board-amber); stroke-width: 0.9; }
+  .bulb__filament { fill: none; stroke: var(--board-amber); stroke-width: 1.1; stroke-linejoin: round; }
+  .bulb__cap { fill: var(--line-2); }
+  .bulb__glow { fill: var(--board-amber); opacity: 0.12; animation: glow 3.2s ease-in-out infinite; }
+  @keyframes glow {
+    0%, 100% { opacity: 0.08; transform: scale(0.92); transform-origin: 40px 36px; }
+    50% { opacity: 0.26; transform: scale(1.06); transform-origin: 40px 36px; }
+  }
+  .wire { fill: none; stroke: var(--line-2); stroke-width: 1.3; stroke-linecap: round; }
+  .wire__flow {
+    stroke: var(--board-amber);
+    stroke-width: 1.5;
+    stroke-dasharray: 5 120;
+    animation: flow 3.2s linear infinite;
+  }
+  @keyframes flow { to { stroke-dashoffset: -125; } }
+  .slat { animation: slatOn 3.2s ease-in-out infinite; }
+  .slat--1 { animation-delay: 0.1s; }
+  .slat--2 { animation-delay: 0.3s; }
+  .slat--3 { animation-delay: 0.5s; }
+  @keyframes slatOn {
+    0%, 55%, 100% { opacity: 0.3; }
+    70%, 85% { opacity: 0.85; }
+  }
+
+  /* 3. fibonacci */
+  .fib { opacity: 0; animation: fadeUp 8s ease-out infinite; animation-delay: var(--d); }
+  @keyframes fadeUp {
+    0% { opacity: 0; }
+    8%, 82% { opacity: 1; }
+    96%, 100% { opacity: 0; }
+  }
+  .fib__n {
+    fill: var(--muted);
+    font-family: var(--font-mono);
+    text-anchor: middle;
+    dominant-baseline: central;
+  }
+  .fib__spiral {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 0.14;
+    stroke-linecap: round;
+    stroke-dasharray: 60;
+    stroke-dashoffset: 60;
+    animation: draw 8s ease-in-out infinite;
+  }
+  @keyframes draw {
+    0% { stroke-dashoffset: 60; }
+    55%, 85% { stroke-dashoffset: 0; }
+    100% { stroke-dashoffset: 60; }
+  }
+
+  /* 4. golden ratio */
+  .gold__sq {
+    fill: var(--accent);
+    stroke: var(--accent);
+    stroke-width: 0.5;
+    opacity: 0;
+    animation: goldIn 7s ease-out infinite;
+    animation-delay: var(--d);
+  }
+  @keyframes goldIn {
+    0% { opacity: 0; }
+    10%, 80% { opacity: 0.1; }
+    92%, 100% { opacity: 0; }
+  }
+  .gold__phi {
+    fill: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 7px;
+    text-anchor: middle;
+    letter-spacing: 0.06em;
+  }
+
+  /* 5. normal distribution */
+  .nd__curve {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 1.4;
+    stroke-linecap: round;
+    stroke-dasharray: 200;
+    stroke-dashoffset: 200;
+    animation: draw2 7s ease-in-out infinite;
+  }
+  @keyframes draw2 {
+    0% { stroke-dashoffset: 200; }
+    50%, 88% { stroke-dashoffset: 0; }
+    100% { stroke-dashoffset: 200; }
+  }
+  .nd__band { fill: var(--accent); opacity: 0; }
+  .nd__band--1 { animation: bandIn 7s ease-out infinite; animation-delay: 1.6s; }
+  .nd__band--2 { animation: bandIn 7s ease-out infinite; animation-delay: 2.4s; }
+  @keyframes bandIn {
+    0% { opacity: 0; }
+    12%, 74% { opacity: 0.13; }
+    88%, 100% { opacity: 0; }
+  }
+  .nd__mean { stroke: var(--line-2); stroke-width: 0.8; stroke-dasharray: 2 2; }
+  .nd__t { font-size: 6px; }
+  .nd__pct {
+    fill: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 7px;
+    opacity: 0;
+    animation: bandIn 7s ease-out infinite;
+    animation-delay: 2s;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .it, .fib, .gold__sq, .nd__band, .nd__pct { animation: none; opacity: 1; }
+    .it--1, .it--2 { display: none; }
+    .gold__sq { opacity: 0.1; }
+    .nd__band { opacity: 0.13; }
+    .fib__spiral, .nd__curve { animation: none; stroke-dashoffset: 0; }
+    .wire__flow, .bulb__glow, .slat, .spark { animation: none; }
+    .spark { display: none; }
+  }
+</style>
