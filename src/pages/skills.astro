@@ -2,12 +2,13 @@
 import Base from '../layouts/Base.astro';
 import PageHeader from '../components/PageHeader.astro';
 import { skillGroups } from '../data/skills';
+import { noteFor } from '../data/site';
 ---
 <Base title="Skills — ER5Labs" description="Tools and technologies Emad Rafiq works with.">
   <main id="main">
     <PageHeader
       title="Skills"
-      lead="Tools and technologies I work with."
+      lead={noteFor('/skills')}
     />
     <div class="container section--tight">
       <div class="skills">

@@ -25,8 +25,8 @@ export type Destination = {
   note: string;
 };
 
-// NOTE: each `note` mirrors the summary line on that page (see src/pages/*)
-// — keep the two in step if you reword one.
+// Each `note` is ALSO the one-line summary shown under that page's title
+// (via noteFor below), so the board and the page can never drift apart.
 export const destinations: Destination[] = [
   { code: 'ER 01', label: 'PROJECTS', href: '/projects', note: 'Work & personal projects' },
   { code: 'ER 02', label: 'SKILLS', href: '/skills', note: 'Tools & technologies' },
@@ -35,10 +35,15 @@ export const destinations: Destination[] = [
   { code: 'ER 05', label: 'PLAYGROUND', href: '/playground', note: 'Experiments, demos & ideas' },
 ];
 
+// The one-line summary under a page title — same text as that page's note on
+// the board. Used by the section pages so the wording only lives in one place.
+export const noteFor = (href: string): string =>
+  destinations.find((d) => d.href === href)?.note ?? '';
+
 // A few recent/current things surfaced on the homepage.
 export const recent = [
   {
-    title: 'Private and Confidential AI Processing Tool',
+    title: 'Secure AI Processing Tool for Private files',
     note: "A private AI tool I'm building for a client's team.",
     href: '/projects/confidential-ai-tool',
     status: 'Live',

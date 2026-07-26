@@ -315,7 +315,28 @@ const tiles = (label: string) => label.split('');
   // ---- Split-flap letter animation (replays each time the board re-enters view)
   const CHARS = ' ABCDEFGHIJKLMNOPQRSTUVWXYZ.&0123456789';
   const nbsp = (c: string) => (c === ' ' ? ' ' : c);
-  const flaps = Array.from(document.querySelectorAll<HTMLElement>('.flap'));
+  const tidy = (p: string) => p.replace(/\/+$/, '') || '/';
+  const here = tidy(location.pathname);
+  const onHome = here === '/';
+
+  const allFlaps = Array.from(document.querySelectorAll<HTMLElement>('.flap'));
+  const settle = (el: HTMLElement) => {
+    el.textContent = nbsp((el.dataset.final || ' ').toUpperCase());
+  };
+
+  // On the homepage every row flips; on any other page only that page's own
+  // row flips — the rest of the board stays still.
+  const flaps = onHome
+    ? allFlaps
+    : allFlaps.filter((el) => {
+        const link = el.closest('.board__link') as HTMLElement | null;
+        const href = tidy(link?.dataset.href || '');
+        return href !== '/' && (here === href || here.startsWith(href + '/'));
+      });
+
+  // Rows that don't animate here simply show their final characters.
+  const animating = new Set(flaps);
+  allFlaps.forEach((el) => { if (!animating.has(el)) settle(el); });
   let timers: number[] = [];
 
   const runFlaps = () => {
@@ -329,7 +350,8 @@ const tiles = (label: string) => label.split('');
       const row = parseInt(link?.style.getPropertyValue('--row') || '0', 10) || 0;
       const i = parseInt(el.style.getPropertyValue('--i') || '0', 10) || 0;
       const spins = 6 + Math.floor(Math.random() * 7);
-      const startDelay = row * 210 + i * 78 + Math.floor(Math.random() * 50);
+      // Cascade row-by-row only on the homepage; a lone row starts promptly.
+      const startDelay = (onHome ? row * 210 : 0) + i * 78 + Math.floor(Math.random() * 50);
       let idx = ((targetIdx - spins) % CHARS.length + CHARS.length) % CHARS.length;
       el.textContent = nbsp(CHARS[idx]);
       const to = window.setTimeout(() => {
@@ -355,22 +377,43 @@ const tiles = (label: string) => label.split('');
   };
 
   const boardEl = document.querySelector('.board');
-  if (reduce) {
-    runFlaps();
+  if (reduce || flaps.length === 0) {
+    allFlaps.forEach(settle);
   } else if (boardEl && 'IntersectionObserver' in window) {
-    // Prime with scrambled characters so the answer never flashes on first paint.
-    flaps.forEach((el) => {
-      const f = (el.dataset.final || ' ').toUpperCase();
-      if (f !== ' ') el.textContent = nbsp(CHARS[Math.floor(Math.random() * CHARS.length)]);
-    });
+    // Scramble first so the answer never flashes on paint — but only while the
+    // tab is actually on screen, so a page opened in a background tab is never
+    // left showing gibberish.
+    const prime = () => {
+      flaps.forEach((el) => {
+        const f = (el.dataset.final || ' ').toUpperCase();
+        if (f !== ' ') el.textContent = nbsp(CHARS[Math.floor(Math.random() * CHARS.length)]);
+      });
+    };
+    if (!document.hidden) prime();
+
     let visible = false;
+    let started = false;
+    const maybeRun = () => {
+      if (!visible || document.hidden) return;
+      started = true;
+      runFlaps();
+    };
+
     const io = new IntersectionObserver((entries) => {
       entries.forEach((e) => {
-        if (e.isIntersecting && !visible) { visible = true; runFlaps(); }
+        if (e.isIntersecting && !visible) { visible = true; maybeRun(); }
         else if (!e.isIntersecting && visible) { visible = false; }
       });
     }, { threshold: 0.25 });
     io.observe(boardEl);
+
+    // Tab revealed later (opened in the background): scramble, then flip.
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && visible && !started) { prime(); maybeRun(); }
+    });
+
+    // Safety net — never leave scrambled characters sitting on screen.
+    window.setTimeout(() => { if (!started) allFlaps.forEach(settle); }, 4000);
   } else {
     runFlaps();
   }

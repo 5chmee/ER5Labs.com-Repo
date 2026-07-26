@@ -22,7 +22,7 @@ export type Project = {
 export const projects: Project[] = [
   {
     slug: 'confidential-ai-tool',
-    title: 'Private and Confidential AI Processing Tool',
+    title: 'Secure AI Processing Tool for Private files',
     blurb: 'A private, regulation-compliant AI tool that lets firms use AI without exposing client data.',
     year: '2026',
     status: 'Live',
