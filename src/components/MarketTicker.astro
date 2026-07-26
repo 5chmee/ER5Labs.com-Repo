@@ -1,0 +1,133 @@
+---
+// Live market ticker — a scrolling strip at the very top of the homepage.
+// Prices come from /api/markets.json (a serverless proxy for Yahoo Finance);
+// colours are all theme tokens, so it follows the pull-cord lamp automatically.
+import { instruments } from '../data/markets';
+---
+<aside class="ticker" aria-label="Live market prices">
+  <div class="ticker__track" id="ticker-track">
+    <div class="ticker__row" data-ticker-row>
+      {instruments.map((i) => (
+        <span class="ticker__item">
+          <span class="ticker__label">{i.label}</span>
+          <span class="ticker__price">&mdash;</span>
+        </span>
+      ))}
+    </div>
+  </div>
+</aside>
+
+<!-- Global (not scoped): the ticker items are rebuilt by the script below, so
+     they never carry Astro's scoping attribute. Every selector is namespaced
+     under .ticker, so this stays self-contained. -->
+<style is:global>
+  .ticker {
+    border-bottom: 1px solid var(--line);
+    background-color: var(--bg-2);
+    overflow: hidden;
+    font-family: var(--font-mono);
+    transition: background-color var(--transition), border-color var(--transition);
+  }
+  .ticker__track {
+    display: flex;
+    width: max-content;
+    animation: tickerScroll 90s linear infinite;
+  }
+  .ticker:hover .ticker__track,
+  .ticker:focus-within .ticker__track { animation-play-state: paused; }
+
+  .ticker__row { display: flex; align-items: center; }
+
+  .ticker__item {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 0.5rem 1.15rem;
+    white-space: nowrap;
+    border-right: 1px solid var(--line);
+  }
+  .ticker__label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+  }
+  .ticker__price {
+    font-size: 0.74rem;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .ticker__chg {
+    font-size: 0.68rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+  }
+  .ticker__chg[data-dir='up'] { color: var(--up); }
+  .ticker__chg[data-dir='down'] { color: var(--down); }
+
+  @keyframes tickerScroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+
+  /* No motion: don't scroll, let people swipe through instead */
+  @media (prefers-reduced-motion: reduce) {
+    .ticker__track { animation: none; width: auto; }
+    .ticker { overflow-x: auto; scrollbar-width: none; }
+    .ticker::-webkit-scrollbar { display: none; }
+  }
+</style>
+
+<script>
+  const track = document.getElementById('ticker-track');
+  const row = track?.querySelector('[data-ticker-row]') as HTMLElement | null;
+  if (track && row) {
+    const fmt = (v: number, unit: string) =>
+      unit === 'yield'
+        ? `${v.toFixed(2)}%`
+        : v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    const render = (items: any[]) => {
+      row.innerHTML = items
+        .map((q) => {
+          const dir = q.changePct == null ? 'flat' : q.changePct > 0 ? 'up' : q.changePct < 0 ? 'down' : 'flat';
+          const arrow = dir === 'up' ? '▲' : dir === 'down' ? '▼' : '';
+          const chg =
+            q.changePct == null
+              ? ''
+              : `<span class="ticker__chg" data-dir="${dir}">${arrow} ${Math.abs(q.changePct).toFixed(2)}%</span>`;
+          return (
+            `<span class="ticker__item">` +
+            `<span class="ticker__label">${q.label}</span>` +
+            `<span class="ticker__price">${fmt(q.price, q.unit)}</span>` +
+            chg +
+            `</span>`
+          );
+        })
+        .join('');
+
+      // Duplicate the row so the scroll loops seamlessly at -50%.
+      track.querySelectorAll('[data-ticker-clone]').forEach((n) => n.remove());
+      const clone = row.cloneNode(true) as HTMLElement;
+      clone.removeAttribute('data-ticker-row');
+      clone.setAttribute('data-ticker-clone', '');
+      clone.setAttribute('aria-hidden', 'true');
+      track.appendChild(clone);
+    };
+
+    const load = async () => {
+      try {
+        const res = await fetch('/api/markets.json', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (Array.isArray(data.items) && data.items.length) render(data.items);
+      } catch {
+        // Leave the placeholder dashes in place if the feed is unreachable.
+      }
+    };
+
+    load();
+    window.setInterval(load, 60000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });
+  }
+</script>

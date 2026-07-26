@@ -20,6 +20,10 @@
   --accent-2:  #a54c29;   /* accent, pressed/hover */
   --on-accent: #fffaf5;   /* text on accent */
 
+  /* Market ticker direction */
+  --up:        #1f7a4d;
+  --down:      #b0432c;
+
   /* Departure board — INVERTS with the theme. Light page => dark board;
      dark page => light board. Every board colour is a token so they flip
      together (see the dark overrides below). This is the light-page board. */
@@ -84,6 +88,9 @@
   --accent:    #d67a4f;
   --accent-2:  #e08a60;
   --on-accent: #17130f;
+
+  --up:        #58c98c;
+  --down:      #ef7f64;
 
   /* Board flips to a muted warm parchment on a dark page (dimmer, not stark white) */
   --board-bg:      #d7d0c1;

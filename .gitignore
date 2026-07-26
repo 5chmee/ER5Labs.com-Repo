@@ -7,6 +7,7 @@ node_modules/
 # Astro build output
 dist/
 .astro/
+.vercel/
 
 # Environment / secrets — never commit these
 .env
