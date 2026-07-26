@@ -46,7 +46,7 @@ export const recent = [
     title: 'Secure AI Processing Tool for Private files',
     note: "A private AI tool I'm building for a client's team.",
     href: '/projects/confidential-ai-tool',
-    status: 'Live',
+    status: 'In progress',
   },
   {
     title: 'ER5Labs.com',

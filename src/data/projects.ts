@@ -10,7 +10,7 @@ export type Project = {
   title: string;
   blurb: string;                // one line, shown in the list
   year: string;
-  status: 'Live' | 'Forever Live' | 'In progress' | 'Archived';
+  status: 'Live' | 'In progress' | 'Archived';
   url?: string;                 // link to the live project, if any
   tags: string[];               // short descriptors
   tools: string[];              // tech/tools used
@@ -25,7 +25,7 @@ export const projects: Project[] = [
     title: 'Secure AI Processing Tool for Private files',
     blurb: 'A private, regulation-compliant AI tool that lets firms use AI without exposing client data.',
     year: '2026',
-    status: 'Live',
+    status: 'In progress',
     // No public link — this is confidential client work.
     tags: ['AI', 'Security', 'Client work'],
     // NOTE: tools/skills below are inferred — tell me the real stack to correct them.
@@ -42,7 +42,7 @@ export const projects: Project[] = [
     title: 'ER5Labs.com',
     blurb: 'This site — my personal hub, updated whenever I ship something new.',
     year: '2026',
-    status: 'Forever Live',
+    status: 'Live',
     url: 'https://er5labs.com',
     tags: ['Portfolio', 'Web'],
     tools: ['Astro', 'HTML', 'CSS', 'JavaScript', 'Git'],
