@@ -10,7 +10,7 @@ export type Project = {
   title: string;
   blurb: string;                // one line, shown in the list
   year: string;
-  status: 'Live' | 'In progress' | 'Archived';
+  status: 'Live' | 'Forever Live' | 'In progress' | 'Archived';
   url?: string;                 // link to the live project, if any
   tags: string[];               // short descriptors
   tools: string[];              // tech/tools used
@@ -42,14 +42,14 @@ export const projects: Project[] = [
     title: 'ER5Labs.com',
     blurb: 'This site — my personal hub, updated whenever I ship something new.',
     year: '2026',
-    status: 'Live',
+    status: 'Forever Live',
     url: 'https://er5labs.com',
     tags: ['Portfolio', 'Web'],
     tools: ['Astro', 'HTML', 'CSS', 'JavaScript', 'Git'],
     skills: ['Front-end', 'Design systems', 'Information architecture'],
     summary: [
-      'ER5Labs.com is the central hub for my work — a light, minimal site whose homepage is a split-flap departure board that routes visitors to everything I make.',
-      'It is built to grow: projects, skills, experience, writing and experiments each have their own space and I update it whenever I build something new.',
+      'ER5Labs is my personal brand and site. Here I display all my undertakings, whether they are for fun or assignments from my job.',
+      'It is built to grow: projects, skills, experience, writing and experiments each have their own space and I will continue to update it whenever I build something new.',
     ],
   },
 ];
