@@ -20,6 +20,11 @@
   --accent-2:  #a54c29;   /* accent, pressed/hover */
   --on-accent: #fffaf5;   /* text on accent */
 
+  /* Graph-paper grid behind everything — fine lines plus a heavier one
+     every fifth, like engineering paper */
+  --grid:       rgba(27, 26, 23, 0.045);
+  --grid-major: rgba(27, 26, 23, 0.075);
+
   /* Market ticker — its own band tone so it reads as a distinct strip
      against the page, plus the up/down directions */
   --ticker-bg: #e9e5db;
@@ -91,6 +96,9 @@
   --accent-2:  #e08a60;
   --on-accent: #17130f;
 
+  --grid:       rgba(236, 227, 209, 0.05);
+  --grid-major: rgba(236, 227, 209, 0.085);
+
   --ticker-bg: #1c1916;
   --up:        #58c98c;
   --down:      #ef7f64;
@@ -147,6 +155,23 @@ body {
   text-rendering: optimizeLegibility;
   font-synthesis: none;
   transition: background var(--transition), color var(--transition);
+}
+
+/* Graph-paper field behind all content. Fixed so it stays put while scrolling;
+   sits above the page background but behind everything else, and any element
+   with its own background (board, ticker, cards) simply covers it. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(var(--grid-major) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-major) 1px, transparent 1px),
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 160px 160px, 160px 160px, 32px 32px, 32px 32px;
 }
 
 img, svg, video { display: block; max-width: 100%; }
