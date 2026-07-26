@@ -1,42 +1,56 @@
 // ---------------------------------------------------------------------------
 // SKILLS — grouped by category. EASY TO EDIT: each group is
-//   { category: 'Heading', note: 'optional one-liner', items: ['A', 'B', ...] }
+//   { category: 'Heading', items: ['A', 'B', ...] }
 // Add a group by adding an object; add a skill by adding a string to `items`.
-//
-// The groups below are inferred from your current projects (the Secure AI tool
-// and this site) — add, edit, or remove anything freely.
+// Groups appear on the page in the order listed here — reorder freely.
 // ---------------------------------------------------------------------------
 
 export type SkillGroup = {
   category: string;
-  note?: string;
   items: string[];
 };
 
 export const skillGroups: SkillGroup[] = [
   {
-    category: 'Web & front-end',
-    note: 'How I build and ship interfaces.',
-    items: ['HTML', 'CSS', 'JavaScript', 'Astro', 'Responsive design'],
+    category: 'Data analytics and statistics',
+    items: ['Python', 'SQL', 'R & RStudio', 'IBM SPSS'],
   },
   {
-    category: 'AI',
-    note: 'Putting language models to work, safely.',
-    items: ['LLM integration', 'Prompt design', 'Output validation & accuracy'],
+    category: 'Data visualisation and BI',
+    items: ['Tableau', 'Power BI', 'MS Excel'],
   },
   {
-    category: 'Data & security',
-    note: 'Keeping data private and protected.',
-    items: ['Databases', 'Authentication', 'Encryption', 'Data privacy & compliance'],
+    category: 'Web and front-end',
+    items: ['HTML', 'CSS', 'JavaScript', 'React', 'Astro'],
   },
   {
-    category: 'Tools & workflow',
-    note: 'Day to day.',
-    items: ['Git & GitHub', 'VS Code / Cursor', 'Vercel'],
+    category: 'Finance and investment analysis',
+    items: [
+      'Portfolio Restructuring',
+      'Financial Modelling',
+      'Databases',
+      'Quantitative Analysis',
+      'Equity Research',
+      'Asset Allocation',
+    ],
+  },
+  {
+    category: 'Accounting and tax',
+    items: ['Intuit QuickBooks', 'Sage', 'Xero', 'Clientbase CRM', 'Tally', 'WinMan'],
+  },
+  {
+    category: 'Tools and workflow',
+    items: ['Git', 'GitHub', 'VS Code / Cursor', 'Vercel'],
   },
   {
     category: 'Growing in',
-    note: 'Actively learning.',
-    items: ['TypeScript', 'Design systems', 'Accessibility'],
+    items: [
+      'TypeScript',
+      'LLM Integration',
+      'Encryption',
+      'Output Validation',
+      'Authentication',
+      'Java',
+    ],
   },
 ];

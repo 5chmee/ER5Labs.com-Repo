@@ -11,8 +11,8 @@ export const profile = {
     "I'm Emad Rafiq. This is my personal portfolio website where I keep, build and post my digital projects and works under ER5Labs, a home base for everything I create, control and collaborate on.",
   // Short About shown on the homepage (each string is a paragraph).
   about: [
-    'ER5Labs is my personal brand for the projects I do, whether it is work I have done or participated in, personal pieces or passion projects.',
-    'This board is the front door — pick a destination to see my projects for yourself, the tools behind them, where I have been, and what I am tinkering with right now.',
+    'I am a Math and Finance student specializing in portfolio management and asset allocation, my core niche and passion. I actively manage a fund averaging 29.6% p.a. to date, backed by a strong foundation in data analysis, tax and accounting (including audits, filings and financial reporting).',
+    'Alongside finance, I design and build websites for personal and client projects, continually expanding my programming and web development toolkit.',
   ],
   location: '',
 };

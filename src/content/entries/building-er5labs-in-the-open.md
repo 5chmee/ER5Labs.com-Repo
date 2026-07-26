@@ -1,7 +1,7 @@
 ---
 title: Building ER5Labs in the open
 date: 2026-07-25
-summary: Why this site is a departure board, and how it is put together.
+summary: Why this site is a departure board and how it is put together.
 ---
 
 I wanted the front door of my site to feel like a place you *depart from* — a hub
@@ -11,7 +11,7 @@ while the rest go *Delayed*, then takes you there.
 
 ## The pieces
 
-- A pull-cord lamp toggles light and dark, and remembers your choice.
+- A pull-cord lamp toggles light and dark and remembers your choice.
 - A side rail that stays out of the way until you hover it.
 - Everything is data-driven, so adding a project or an entry is one small edit.
 

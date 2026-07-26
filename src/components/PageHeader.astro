@@ -1,6 +1,6 @@
 ---
 interface Props {
-  kicker: string;
+  kicker?: string;
   title: string;
   lead?: string;
   back?: { href: string; label: string };
@@ -11,7 +11,7 @@ const { kicker, title, lead, back } = Astro.props;
   {back && (
     <a class="pagehead__back link-underline" href={back.href}>&larr; {back.label}</a>
   )}
-  <p class="eyebrow">{kicker}</p>
+  {kicker && <p class="eyebrow">{kicker}</p>}
   <h1 class="pagehead__title">{title}</h1>
   {lead && <p class="pagehead__lead measure">{lead}</p>}
 </header>

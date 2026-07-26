@@ -6,18 +6,14 @@ import { skillGroups } from '../data/skills';
 <Base title="Skills — ER5Labs" description="Tools and technologies Emad Rafiq works with.">
   <main id="main">
     <PageHeader
-      kicker="ER5Labs — Departures"
       title="Skills"
-      lead="What I work with, and where I'm growing."
+      lead="What I work with and where I'm growing."
     />
     <div class="container section--tight">
       <div class="skills">
         {skillGroups.map((g) => (
           <section class="skills__group">
-            <div class="skills__head">
-              <h2 class="skills__cat">{g.category}</h2>
-              {g.note && <p class="skills__note">{g.note}</p>}
-            </div>
+            <h2 class="skills__cat">{g.category}</h2>
             <ul class="skills__list">
               {g.items.map((i) => <li>{i}</li>)}
             </ul>
@@ -41,7 +37,6 @@ import { skillGroups } from '../data/skills';
     .skills__group { grid-template-columns: 14rem 1fr; }
   }
   .skills__cat { font-size: var(--step-1); }
-  .skills__note { margin-top: 0.35rem; color: var(--muted); font-size: var(--step--1); }
   .skills__list {
     list-style: none;
     display: flex;

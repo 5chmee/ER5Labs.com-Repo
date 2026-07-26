@@ -32,9 +32,9 @@ export const projects: Project[] = [
     tools: ['AI / LLM', 'Database', 'Encryption', 'Authentication'],
     skills: ['AI output validation', 'Data privacy & compliance', 'Security & encryption', 'Backend & databases'],
     summary: [
-      "A private, confidential AI tool that lets small firms and enterprises put AI to work without exposing their clients' data. It is built around confidentiality: requests stay private, and the AI's outputs are proof-checked for accuracy — whether that is summarising a balance sheet or categorising a bank statement.",
-      "It is currently being rolled out to a client's team of 30, which has meant meeting strict regulatory, privacy and safety standards from the ground up. Active work includes a redaction feature, and an auditing and reuse layer so common requests do not have to be rewritten each time — saving time, tokens and cost.",
-      'Still on the roadmap: secure account provisioning with encrypted credentials in the database, and a usage dashboard so an administrator can oversee what their team is using the tool for.',
+      "A private, confidential AI tool that lets small firms and enterprises put AI to work without exposing their clients' data. It is built around confidentiality: requests stay private and the AI's outputs are proof-checked for accuracy — whether that is summarising a balance sheet or categorising a bank statement.",
+      "It is currently being rolled out to a client's team of 30, which has meant meeting strict regulatory, privacy and safety standards from the ground up. Active work includes a redaction feature alongside an auditing and reuse layer, so common requests do not have to be rewritten each time — saving time, tokens and cost.",
+      'Still on the roadmap: secure account provisioning with encrypted credentials in the database plus a usage dashboard so an administrator can oversee what their team is using the tool for.',
     ],
   },
   {
@@ -49,7 +49,7 @@ export const projects: Project[] = [
     skills: ['Front-end', 'Design systems', 'Information architecture'],
     summary: [
       'ER5Labs.com is the central hub for my work — a light, minimal site whose homepage is a split-flap departure board that routes visitors to everything I make.',
-      'It is built to grow: projects, skills, experience, writing and experiments each have their own space, and I update it whenever I build something new.',
+      'It is built to grow: projects, skills, experience, writing and experiments each have their own space and I update it whenever I build something new.',
     ],
   },
 ];
