@@ -25,12 +25,14 @@ export type Destination = {
   note: string;
 };
 
+// NOTE: each `note` mirrors the summary line on that page (see src/pages/*)
+// — keep the two in step if you reword one.
 export const destinations: Destination[] = [
-  { code: 'ER 01', label: 'PROJECTS', href: '/projects', note: 'Current & past work' },
+  { code: 'ER 01', label: 'PROJECTS', href: '/projects', note: 'Work & personal projects' },
   { code: 'ER 02', label: 'SKILLS', href: '/skills', note: 'Tools & technologies' },
-  { code: 'ER 03', label: 'EXPERIENCE', href: '/experience', note: 'Career & work history' },
-  { code: 'ER 04', label: 'ENTRIES', href: '/entries', note: 'Writing & notes' },
-  { code: 'ER 05', label: 'PLAYGROUND', href: '/playground', note: 'Experiments & demos' },
+  { code: 'ER 03', label: 'EXPERIENCE', href: '/experience', note: 'Background, roles & qualifications' },
+  { code: 'ER 04', label: 'ENTRIES', href: '/entries', note: 'Thoughts, notes & write-ups' },
+  { code: 'ER 05', label: 'PLAYGROUND', href: '/playground', note: 'Experiments, demos & ideas' },
 ];
 
 // A few recent/current things surfaced on the homepage.
