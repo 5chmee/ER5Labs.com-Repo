@@ -9,7 +9,7 @@ export function getStaticPaths() {
 }
 const { project } = Astro.props;
 ---
-<Base title={`${project.title} — ER5Labs`} description={project.blurb}>
+<Base title={`${project.title} · ER5Labs`} description={project.blurb}>
   <main id="main">
     <PageHeader
       kicker={`Project · ${project.year}`}
@@ -57,7 +57,7 @@ const { project } = Astro.props;
       ) : project.roughWork ? null : (
         <div class="detail__media detail__media--empty">
           <p>
-            Media placeholder — add photos, videos, or animations for this project in
+            Media placeholder. Add photos, videos or animations for this project in
             <code>src/data/projects.ts</code>.
           </p>
         </div>

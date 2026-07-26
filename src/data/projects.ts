@@ -33,15 +33,15 @@ export const projects: Project[] = [
     tools: ['AI / LLM', 'Database', 'Encryption', 'Authentication'],
     skills: ['AI output validation', 'Data privacy & compliance', 'Security & encryption', 'Backend & databases'],
     summary: [
-      "A private, confidential AI tool that lets small firms and enterprises put AI to work without exposing their clients' data. It is built around confidentiality: requests stay private and the AI's outputs are proof-checked for accuracy — whether that is summarising a balance sheet or categorising a bank statement.",
-      "It is currently being rolled out to a client's team of 30, which has meant meeting strict regulatory, privacy and safety standards from the ground up. Active work includes a redaction feature alongside an auditing and reuse layer, so common requests do not have to be rewritten each time — saving time, tokens and cost.",
+      "A private, confidential AI tool that lets small firms and enterprises put AI to work without exposing their clients' data. It is built around confidentiality: requests stay private and the AI's outputs are proof-checked for accuracy, whether that is summarising a balance sheet or categorising a bank statement.",
+      "It is currently being rolled out to a client's team of 30, which has meant meeting strict regulatory, privacy and safety standards from the ground up. Active work includes a redaction feature alongside an auditing and reuse layer, so common requests do not have to be rewritten each time, saving time, tokens and cost.",
       'Still on the roadmap: secure account provisioning with encrypted credentials in the database plus a usage dashboard so an administrator can oversee what their team is using the tool for.',
     ],
   },
   {
     slug: 'er5labs',
     title: 'ER5Labs.com',
-    blurb: 'This site — my personal hub, updated whenever I ship something new.',
+    blurb: 'This site is my personal hub, updated whenever I ship something new.',
     year: '2026',
     status: 'Live',
     url: 'https://er5labs.com',

@@ -13,7 +13,7 @@ const { Content } = await render(entry);
 const fmt = (d: Date) =>
   d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 ---
-<Base title={`${entry.data.title} — ER5Labs`} description={entry.data.summary}>
+<Base title={`${entry.data.title} · ER5Labs`} description={entry.data.summary}>
   <main id="main">
     <PageHeader
       kicker={fmt(entry.data.date)}

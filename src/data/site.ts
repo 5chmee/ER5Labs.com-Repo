@@ -50,7 +50,7 @@ export const recent = [
   },
   {
     title: 'ER5Labs.com',
-    note: 'This site — updated whenever I ship something new.',
+    note: 'Updated whenever I ship something new.',
     href: '/projects/er5labs',
     status: 'Live',
   },
