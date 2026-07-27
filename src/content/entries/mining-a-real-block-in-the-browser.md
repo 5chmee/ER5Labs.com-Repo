@@ -1,183 +1,191 @@
 ---
 title: Mining a real Bitcoin block in the browser
 date: 2026-07-27
-summary: The maths, the statistics and the engineering behind the Playground demo, plus why it can never pay out.
+summary: What Bitcoin mining actually is, built as a playable demo, plus why it can never pay out.
 ---
 
-The newest thing in my Playground hashes the real header of the current Bitcoin
-block. Not a mock-up of one. The version field, the previous block hash, the
-merkle root, the timestamp and the compact difficulty target all arrive live
-from the network, get laid out as the same 80 bytes a miner hashes and run
-through the same double SHA-256.
+## Mining, in one paragraph
 
-The test I set myself was simple. If my implementation is genuinely correct,
-then feeding it the nonce the real miner found should reproduce that block's
-real hash exactly. It does. Block 959,833 was solved with the nonce in its
-header and the demo returns:
+Bitcoin mining is a guessing game. Take the batch of transactions waiting to be
+recorded, add one changeable number to it called the **nonce**, then feed the whole
+lot into a scrambler that turns any input into a 64 character code. Change the
+nonce by one and the code comes out completely different, with no pattern you can
+follow. You win if the code that comes out happens to start with enough zeros.
+
+That is the entire contest. There is no skill in it and no way to work backwards,
+so the only strategy is guessing faster than everyone else. That is why miners buy
+warehouses of machines that guess trillions of times a second.
+
+The thing I built for my Playground plays that exact game, against a real block
+taken live off the Bitcoin network.
+
+## Proving it is the real thing
+
+Anybody can put a spinning number on a page and call it mining. So the demo has a
+button that settles the question.
+
+Every block that has ever been mined was won by somebody finding a nonce. That
+winning number is stored in the block forever. If my code is genuinely doing what
+real miners do, then feeding it a real block's winning nonce should reproduce that
+block's real code exactly.
+
+Press the button and it does. Block 959,833 comes back as:
 
 ```
 000000000000000000016a439fba8b46a18e7fe17d774cf23f31dfd4235a9330
 ```
 
-which is that block's actual identifier. One wrong bit anywhere in the byte
-layout and it would return noise. There is a button in the demo that runs this
-check live against whatever block is current, so you do not have to take my word
-for it.
+which is that block's actual identifier, the one you can look up on any block
+explorer. If a single bit of my implementation were wrong it would return noise
+instead. The check runs against whatever block is current, so you do not have to
+take my word for it.
 
-## Writing SHA-256 by hand
+## Why writing the scrambler myself was worth it
 
-I started with the browser's built-in `crypto.subtle.digest`, which was correct
-but slow for this purpose. It returns a promise, so awaiting it once per hash
-costs more than the hashing does. At around seventeen thousand hashes per second
-the bottleneck was the scheduler rather than the arithmetic.
+The scrambler is SHA-256. Browsers ship with it built in, so I used that first.
 
-So I wrote SHA-256 out longhand: the eight working variables, the sixty-four
-round constants, the message schedule expansion, the rotations and the modular
-additions. It runs about eight times faster, roughly a hundred and forty thousand
-hashes per second on one thread, because a tight synchronous loop has no promise
-machinery in it.
+It was correct but slow, for an annoying reason: the built in version hands back a
+promise, which is fine if you hash a few things and useless if you hash millions.
+The waiting cost more than the work. I was getting about seventeen thousand guesses
+a second, of which almost none was arithmetic.
 
-I did not trust it until it passed three tests: the NIST vectors for `"abc"` and
-the empty string, plus the real block reproduction above.
+So I wrote SHA-256 out by hand instead: the eight working numbers it shuffles, the
+sixty-four constants it mixes in, the rotations, the additions. A plain loop with
+no waiting in it. That runs about eight times faster, roughly a hundred and forty
+thousand guesses a second on one thread.
 
-### The part that took the longest
+I did not trust a word of it until it passed three tests: the two standard
+reference cases that every implementation must match, then the real block above.
 
-Almost none of the difficulty was in the compression function. It was byte order.
+### The bit that actually took the time
 
-A header is a fixed 80 byte structure: 4 bytes of version, 32 of previous hash,
-32 of merkle root, then 4 each of time, bits and nonce. The integers are
-little-endian, so 1 is stored `01 00 00 00`. The two hashes are stored in reverse
-of how they are displayed, because Bitcoin prints hashes big-endian but stores
-them little-endian internally. Then the double hash output has to be reversed
-again before you compare it to anything.
+Almost none of the difficulty was in the mathematics. It was in the order of the
+bytes.
 
-Three separate reversals. Getting any one of them wrong produces a
-plausible-looking hash that is simply incorrect. That is exactly why I tested
-against a known block instead of eyeballing the output.
+Bitcoin writes some numbers backwards. Not metaphorically, literally: the number 1
+is stored as `01 00 00 00`. The two codes inside a block are stored in reverse of
+how they are displayed, because Bitcoin prints them one way round and stores them
+the other. Then the final answer has to be flipped again before you can compare it
+to anything.
 
-## Decoding the target
+Three separate reversals. Getting any one of them wrong gives you a
+respectable looking code that is simply wrong. That is exactly why I tested against
+a known block rather than trusting my eyes.
 
-The `bits` field is a compact floating point number packed into 32 bits. The
-leading byte is an exponent, the remaining three a mantissa. The real 256 bit
-target is:
+## How long should a win take?
 
-```
-target = mantissa × 2^(8 × (exponent − 3))
-```
+This is the part I find genuinely interesting. It is where the statistics live.
 
-That overflows a double by an enormous margin, so I expand it with `BigInt` and
-compare candidate hashes against it as full 256 bit integers. A hash is a
-solution when it is less than or equal to that number.
+Every guess has the same small chance of winning, but crucially the guesses do not
+build on each other. Being a million guesses in tells you nothing about how close
+you are. The process has no memory.
 
-## The statistics
+That has a real consequence: **there is no progress bar in mining, nor can there
+ever be.** Not because nobody has written one, but because there is nothing for
+it to measure. This is a mathematical fact rather than a design choice.
 
-SHA-256 output is uniform, so every nonce is an independent Bernoulli trial.
-Asking for *d* leading hexadecimal zeros gives each attempt probability
-p = 16<sup>−d</sup>, which makes the number of attempts before the first success
-geometric with expectation 16<sup>d</sup>.
+The demo draws your chance of having won by any given moment, using the speed you
+are actually going. The curve climbs steeply then flattens. The dashed line
+marks the halfway point, where you have a 50/50 chance of being done.
 
-The demo plots the continuous limit of that. With a measured rate R the hit rate
-is λ = pR. The probability of having found something by time t is:
+<details>
+<summary>The formal version</summary>
+
+Each nonce is an independent Bernoulli trial. Asking for *d* leading hexadecimal
+zeros gives each attempt probability p = 16<sup>−d</sup>, so the number of attempts
+before the first success is geometric with expectation 16<sup>d</sup>. Taking the
+continuous limit, with measured rate R the hit rate is λ = pR and
 
 ```
 P(T ≤ t) = 1 − e^(−λt)
 ```
 
-The chart draws that curve against your own measured hash rate and marks the
-median at ln(2)/λ. At 5 zeros and roughly 85,000 hashes per second that came out
-at a median of 8.6 seconds and a mean of 12.4.
+which is the exponential distribution. Its memorylessness is why block arrivals
+across the whole network form a Poisson process with a mean of ten minutes. The
+median is ln(2)/λ, which is what the dashed line marks.
 
-The important consequence is that the process is memoryless. Being a million
-hashes into a search tells you nothing about how close you are, which is the same
-reason block arrivals across the whole network form a Poisson process with a mean
-of ten minutes. There is no progress bar in mining. That is a theorem rather
-than a design choice.
+</details>
 
-## Difficulty as a control loop
+## Why blocks always take ten minutes
 
-Every 2016 blocks the network rescales the target so that blocks keep averaging
-ten minutes:
+Left alone, blocks would arrive faster and faster as more machines joined. Bitcoin
+stops that by moving the goalposts.
 
-```
-next = current × (2016 × 600) / actual seconds elapsed
-```
+Every two weeks it counts how long the last 2016 blocks really took. If they came
+faster than ten minutes each, winning gets harder. If slower, easier. The change is
+capped at a factor of four in either direction so one strange fortnight cannot
+break it.
 
-clamped to a factor of four in either direction so a single anomalous epoch
-cannot destabilise it. It is a proportional controller with saturation limits,
-acting on a noisy measurement of global computing power.
+An engineer would recognise this immediately: it is a thermostat. A feedback loop
+correcting a noisy measurement back towards a set point.
 
-The demo shows where the network currently is in that cycle using live data: how
-far through the 2016 blocks it is, the running average block time against the ten
-minute goal, plus the resulting projected adjustment. While I was writing this,
-blocks were averaging 10.3 minutes, so difficulty was projected to rise about
-1.06 per cent.
+The demo shows where the network is in that cycle right now, using live data. While
+I was writing this, blocks were running slightly slow at 10.3 minutes, so the next
+adjustment was heading about 1 per cent harder.
 
-## Why it can never pay
+## Why it can never pay you anything
 
-The demo computes the comparison live rather than asserting it.
+The demo works this out live rather than just asserting it.
 
-The network runs at roughly 873 exahashes per second. A browser managed about
-85,000 across four threads, a gap of around sixteen orders of magnitude. Working
-it through, a visitor's share is about 5.7 × 10⁻¹⁵, which at current issuance is
-something like 2.6 × 10⁻¹² BTC per day. The smallest payout a pool will usually
-make is 0.0001 BTC, so that is on the order of a hundred thousand years of
-uninterrupted hashing.
+The Bitcoin network currently makes about **873 billion billion** guesses per
+second. My browser, using four threads, managed about **85,000**. That is a gap of
+roughly sixteen orders of magnitude, which is not a gap you close with better code.
 
-So the demo submits nothing, connects to no pool and contains no wallet address.
-It says so on screen, twice. Anything else would be dishonest. Browser miners
-that hide this are precisely what antivirus software and Safe Browsing block on
-sight.
+Following it through: a visitor's share of the network works out to around
+2.6 × 10⁻¹² BTC per day. The smallest amount a mining pool will normally pay out is
+0.0001 BTC. At that rate you would need to mine without stopping for something like
+**a hundred thousand years** to be paid once.
 
-## The same maths on real hardware
+So the demo submits nothing, joins no pool and contains no wallet address. It says
+so on screen, twice. Anything else would be dishonest. Browser miners that hide
+this are exactly what antivirus software blocks on sight.
 
-Since the interesting question is not whether a browser can mine but whether
-anything can, I built the expected value model into the page. Revenue is your
-share of the network multiplied by daily issuance:
+## Does it pay for anyone?
 
-```
-profit/day = (H ÷ H_net) × 144 × 3.125 × price × (1 − fee) − kW × 24 × tariff
-```
+Since the real question is not whether a browser can mine but whether anything can,
+I built the profitability model into the page.
 
-Put a 200 TH/s machine drawing 3.5 kW on a 25p domestic tariff into it and the
-answer is a loss of about £16 a day. Revenue is roughly £4.94 while the
-electricity alone is £21. The break-even tariff is about 6p per kWh, which is why
-industrial mining clusters around stranded hydro and flared gas rather than
-anywhere you could plug in at home.
+You earn the same slice of the day's new coins as your slice of the world's guessing
+power, then you pay for the electricity you burned getting it. Put a top end machine,
+200 trillion guesses a second drawing 3.5 kilowatts, on an ordinary British home
+tariff of 25p per unit. The answer is a **loss of about £16 a day**. It earns
+roughly £4.94 and spends £21 on power.
 
-The model also reports payback period and the four year figure across a halving
-cycle, then compares it against simply buying the coins with the same capital. It
-holds difficulty and price constant, which if anything flatters mining, since
-difficulty has historically risen and steadily erodes the share a fixed rig earns.
+The break-even electricity price is about **6p per unit**. That single number
+explains the whole industry: it is why mining happens next to hydroelectric dams or
+flared gas wells, never anywhere you could plug a machine in at home.
 
-## Keeping the page fast
+The model also gives payback time and the four year figure across a halving cycle,
+compared against simply buying the coins with the same money. It assumes difficulty
+and price stay flat, which if anything is generous to mining, since difficulty has
+historically climbed and quietly erodes what a fixed machine earns.
 
-A hashing loop is the easiest way to make a page stutter, so none of it runs on
-the main thread. The search lives in a pool of Web Workers, one per core, each
-starting at a different nonce and stepping by the pool size so no two ever
-duplicate work. The main thread only receives progress messages and repaints.
+## Keeping the page quick
 
-Inside each worker the loop is duty-cycled: it hashes a batch, times it, then
-rests in proportion to the effort you asked for. Requesting 30 per cent of a core
-means working for one unit and waiting for just over two. That is why the page
-scrolls smoothly with every core busy.
+A guessing loop is the fastest way to make a web page stutter, so none of it runs
+where the page is drawn. The work happens in background threads, one per core you
+allow, each starting at a different nonce and stepping by the number of threads so
+no two ever check the same number.
 
-Three rules follow from taking that seriously. The reported rate is measured over
-a rolling window that includes the idle time, so it reflects what you actually
-asked for rather than flattering it. Nothing computes at all until you have read
-the notice and pressed start. And it stops itself when the tab goes to the
-background, because there is no excuse for draining someone's battery on a page
-they have navigated away from.
+Inside each thread the loop deliberately rests. It guesses for a while, times
+itself, then waits in proportion to the effort you asked for. Choosing 30 per cent
+means working for one moment and waiting for two. That is why the page still scrolls
+smoothly with every core busy.
 
-New blocks arrive over a WebSocket rather than by polling, so when the network
-finds one the demo switches to hashing that header within a second or two, and
-the chain tip on screen updates itself. The slower data, the difficulty schedule
-and the price, comes through a small cached endpoint so one request serves every
-visitor for a couple of minutes. A verified block snapshot ships with the page as
-a fallback, so the demo still works if the network is unreachable.
+A few rules follow from taking that seriously. The speed shown includes the resting
+time, so it reflects what you actually asked for rather than flattering itself.
+Nothing runs at all until you have read the notice and pressed start. And it stops
+by itself when you switch tabs, because there is no excuse for draining someone's
+battery on a page they have left.
 
-## What I would still add
+New blocks arrive over a live connection rather than by repeatedly asking, so when
+the network finds one the demo moves onto that block within a second or two. The
+slower moving data, the difficulty schedule and the price, comes through a small
+shared cache so one request serves every visitor for a couple of minutes.
 
-Plotting difficulty on a log scale over several years would show the control loop
-responding to hardware generations. Letting the profitability model take a
-difficulty growth rate would turn it from a snapshot into a proper projection,
-which is closer to the work I actually enjoy.
+## What I would add next
+
+Plotting difficulty over several years on a log scale would show the thermostat
+responding to each new generation of hardware. Letting the profitability model take
+a difficulty growth rate would turn it from a snapshot into a forecast, which is
+closer to the work I actually enjoy.

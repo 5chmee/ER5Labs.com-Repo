@@ -38,6 +38,29 @@
   </div>
 
   <div class="miner__game" id="m-game" hidden>
+    <!-- 0. Plain English primer -->
+    <section class="miner__primer">
+      <h4 class="miner__panel-title">What mining actually is</h4>
+      <p>
+        Mining is a guessing game. You take the block of transactions waiting to be
+        recorded, add one changeable number to it called the <em>nonce</em>, and run the
+        whole lot through a scrambler that turns any input into a 64 character code. Change
+        the nonce by one and the code comes out completely different, with no way to predict
+        it. So you just keep trying numbers.
+      </p>
+      <p>
+        You win when the code that comes out starts with enough zeros. That is the only
+        rule. There is no cleverness available, only guessing quickly, which is why miners
+        buy machines that guess trillions of times a second.
+      </p>
+      <p>
+        Everything below is the real thing: a real block off the Bitcoin network, the real
+        scrambler, the real winning condition. The only change is that winning for real
+        needs about a hundred thousand billion billion guesses, so you play against an
+        easier goal.
+      </p>
+    </section>
+
     <!-- 1. Live network state -->
     <div class="miner__stats">
       <div class="miner__stat">
@@ -60,24 +83,40 @@
 
     <!-- 2. The real header being hashed -->
     <div class="miner__block">
-      <p class="miner__hdr">Real 80-byte block header</p>
-      <div class="miner__line"><span class="miner__k">Version</span><span class="miner__mono" id="m-version">…</span></div>
-      <div class="miner__line"><span class="miner__k">Prev block</span><span class="miner__mono miner__dim" id="m-prev">…</span></div>
-      <div class="miner__line"><span class="miner__k">Merkle root</span><span class="miner__mono miner__dim" id="m-merkle">…</span></div>
-      <div class="miner__line"><span class="miner__k">Time / bits</span><span class="miner__mono" id="m-time">…</span></div>
-      <div class="miner__line"><span class="miner__k">Nonce</span><span class="miner__mono" id="m-nonce">0</span></div>
+      <p class="miner__hdr">The real block being hashed</p>
+      <div class="miner__line">
+        <span class="miner__k">Version<small>rule set</small></span>
+        <span class="miner__mono" id="m-version">…</span>
+      </div>
+      <div class="miner__line">
+        <span class="miner__k">Prev block<small>the one before</small></span>
+        <span class="miner__mono miner__dim" id="m-prev">…</span>
+      </div>
+      <div class="miner__line">
+        <span class="miner__k">Merkle root<small>the transactions</small></span>
+        <span class="miner__mono miner__dim" id="m-merkle">…</span>
+      </div>
+      <div class="miner__line">
+        <span class="miner__k">Time / bits<small>clock and goal</small></span>
+        <span class="miner__mono" id="m-time">…</span>
+      </div>
+      <div class="miner__line">
+        <span class="miner__k">Nonce<small>your guess</small></span>
+        <span class="miner__mono" id="m-nonce">0</span>
+      </div>
       <div class="miner__line miner__line--hash">
-        <span class="miner__k">Hash</span>
+        <span class="miner__k">Result<small>needs zeros</small></span>
         <span class="miner__mono miner__hash" id="m-hash">press start to begin</span>
       </div>
     </div>
 
     <p class="miner__target">
-      Practice target: begins with <span class="miner__zeros" id="m-target">0000</span>
+      You win here if the result starts with <span class="miner__zeros" id="m-target">0000</span>
       <span class="miner__odds" id="m-odds"></span>
     </p>
     <p class="miner__target">
-      Real target: <span class="miner__mono miner__dim" id="m-realtarget">…</span>
+      To win for real it would have to be smaller than
+      <span class="miner__mono miner__dim" id="m-realtarget">…</span>
     </p>
 
     <!-- 3. Controls -->
@@ -113,11 +152,17 @@
 
     <!-- 4. Probability model -->
     <section class="miner__panel">
-      <h4 class="miner__panel-title">Probability of a hit over time</h4>
+      <h4 class="miner__panel-title">How long should this take?</h4>
       <p class="miner__panel-note">
-        Each nonce is an independent trial with success probability p = 16<sup>−d</sup>, so the
-        wait is geometric. In continuous time that is exponential, which is why block arrivals
-        across the network are Poisson.
+        Every guess has the same tiny chance of winning, and guesses do not build on each
+        other. So the curve below is your chance of having won by a given moment, at the
+        speed you are actually going. The dashed line is the halfway point: you have a
+        50/50 chance of winning before it.
+        <span class="miner__aside">
+          Formally each nonce is an independent trial with p = 16<sup>−d</sup>, so the wait
+          is geometric, and its continuous limit is exponential. That is why block arrivals
+          across the network follow a Poisson process.
+        </span>
       </p>
       <svg class="miner__chart" viewBox="0 0 320 130" role="img" aria-label="Probability of finding a hit against elapsed time">
         <line class="ax" x1="34" y1="104" x2="310" y2="104" />
@@ -137,11 +182,17 @@
 
     <!-- 5. Difficulty retarget -->
     <section class="miner__panel">
-      <h4 class="miner__panel-title">Difficulty retarget</h4>
+      <h4 class="miner__panel-title">Why blocks always take ten minutes</h4>
       <p class="miner__panel-note">
-        Every 2016 blocks the network rescales the target so blocks average ten minutes:
-        <span class="miner__formula">next = current × (2016 × 600) / actual seconds</span>, clamped
-        to a factor of four either way.
+        As more machines join, blocks would come faster. So every two weeks the network
+        counts how long the last 2016 blocks really took and moves the goalposts to bring
+        the average back to ten minutes. Faster than ten and it gets harder, slower and it
+        gets easier.
+        <span class="miner__aside">
+          <span class="miner__formula">next = current × (2016 × 600) / actual seconds</span>,
+          clamped to a factor of four either way so one strange fortnight cannot
+          destabilise it.
+        </span>
       </p>
       <div class="miner__bar" aria-hidden="true"><span id="m-epoch"></span></div>
       <p class="miner__stat-line" id="m-retarget">…</p>
@@ -149,11 +200,14 @@
 
     <!-- 6. Expected value -->
     <section class="miner__panel">
-      <h4 class="miner__panel-title">Expected value of real hardware</h4>
+      <h4 class="miner__panel-title">Would a real machine make money?</h4>
       <p class="miner__panel-note">
-        The same maths applied to an actual rig. Revenue is your share of the network times
-        the daily issuance, so profit per day is
-        <span class="miner__formula">(H ÷ H<sub>net</sub>) × 144 × 3.125 × price × (1 − fee) − kW × 24 × tariff</span>.
+        You earn the same slice of the day's new coins as your slice of the world's guessing
+        power, then pay for the electricity you burned. Change the numbers below to see when
+        that is worth doing. The defaults are a top end machine on a normal home tariff.
+        <span class="miner__aside">
+          <span class="miner__formula">profit/day = (H ÷ H<sub>net</sub>) × 144 × 3.125 × price × (1 − fee) − kW × 24 × tariff</span>
+        </span>
       </p>
       <div class="miner__inputs">
         <label>Hash rate (TH/s)<input type="number" id="ev-hash" value="200" min="0" step="10" /></label>
@@ -190,6 +244,26 @@
 
   .miner__game { display: grid; gap: 1rem; }
 
+  .miner__primer {
+    display: grid; gap: 0.7rem;
+    padding: clamp(0.9rem, 2.5vw, 1.25rem);
+    border-left: 2px solid var(--accent);
+    background: var(--bg-2);
+    border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+  }
+  .miner__primer p {
+    margin: 0; max-width: 44rem;
+    font-size: var(--step--1); line-height: 1.65; color: var(--ink-2);
+  }
+  .miner__primer em { color: var(--accent); font-style: normal; }
+
+  /* The formal restatement, kept for readers who want it */
+  .miner__aside {
+    display: block; margin-top: 0.55rem; padding-top: 0.55rem;
+    border-top: 1px dashed var(--line-2);
+    font-size: 0.92em; color: var(--muted);
+  }
+
   .miner__stats {
     display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px;
     background: var(--line); border: 1px solid var(--line);
@@ -218,7 +292,13 @@
   }
   .miner__block .miner__k { color: var(--board-dim); }
   .miner__line { display: flex; gap: 0.9rem; align-items: baseline; }
-  .miner__line .miner__k { flex: 0 0 5.4rem; }
+  .miner__line .miner__k { flex: 0 0 8.2rem; }
+  /* plain-English gloss under each header field name */
+  .miner__line .miner__k small {
+    display: block; margin-top: 0.15rem;
+    font-size: 0.86em; letter-spacing: 0.06em; text-transform: none;
+    color: var(--board-dim); opacity: 0.75;
+  }
   .miner__mono {
     font-family: var(--font-mono); font-size: 0.78rem; color: var(--board-text);
     word-break: break-all; font-variant-numeric: tabular-nums;
@@ -419,8 +499,9 @@
       $('m-median-lbl').setAttribute('x', String(mx));
       $('m-median-lbl').textContent = `median ${fmtT(median)}`;
       $('m-xmax').textContent = fmtT(xmax);
+      const realYears = (block.difficulty * 4294967296) / r / 3.15e7;
       $('m-prob').textContent =
-        `p = 16^-${difficulty} = ${p.toExponential(2)} per hash. At ${num(r)} H/s that is ${lambda.toFixed(3)} hits/s, so the expected wait is ${fmtT(1 / lambda)} and the median is ${fmtT(median)}. The real target would take ${( (block.difficulty * 4294967296) / r / 3.15e7 ).toExponential(1)} years.`;
+        `You are guessing ${num(r)} times a second. Each guess has about a 1 in ${num(Math.round(1 / p))} chance, so on average you should win every ${fmtT(1 / lambda)}, and half the time you will have won within ${fmtT(median)}. Winning against the real target instead would take roughly ${realYears.toExponential(1)} years.`;
     };
 
     // ---- difficulty retarget ---------------------------------------------
@@ -428,9 +509,11 @@
       const rt = block.retarget;
       if (!rt) { $('m-retarget').textContent = 'Retarget data unavailable.'; return; }
       ($('m-epoch') as HTMLElement).style.width = `${rt.progressPercent.toFixed(1)}%`;
-      const dir = rt.difficultyChange >= 0 ? 'up' : 'down';
+      const dir = rt.difficultyChange >= 0 ? 'harder' : 'easier';
+      const avg = (rt.timeAvg / 60000).toFixed(1);
+      const pace = rt.timeAvg > 600000 ? 'slower' : 'faster';
       $('m-retarget').textContent =
-        `${rt.progressPercent.toFixed(1)}% through the epoch, ${num(rt.remainingBlocks)} blocks to height ${num(rt.nextRetargetHeight)}. Blocks are averaging ${(rt.timeAvg / 60000).toFixed(1)} minutes against a 10 minute goal, so difficulty is projected ${dir} ${Math.abs(rt.difficultyChange).toFixed(2)}%. Last retarget moved it ${rt.previousRetarget.toFixed(2)}%.`;
+        `Right now blocks are taking ${avg} minutes each, ${pace} than the ten minute goal, so at the next change it should get ${dir} by about ${Math.abs(rt.difficultyChange).toFixed(2)}%. That change happens in ${num(rt.remainingBlocks)} blocks. Last time it moved ${Math.abs(rt.previousRetarget).toFixed(2)}% ${rt.previousRetarget >= 0 ? 'harder' : 'easier'}.`;
     };
 
     // ---- expected value ---------------------------------------------------

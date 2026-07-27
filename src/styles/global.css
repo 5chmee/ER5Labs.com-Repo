@@ -258,10 +258,44 @@ a { color: inherit; text-decoration: none; }
 .prose ul, .prose ol { padding-left: 1.2rem; }
 .prose li + li { margin-top: 0.35rem; }
 .prose strong { color: var(--ink); }
-.prose code {
+/* Inline code only. Without :not(pre) this also repainted the background of
+   highlighted code blocks, which already carry their own dark background and
+   light text, leaving light text on a light box in light mode. */
+.prose :not(pre) > code {
   font-family: var(--font-mono); font-size: 0.9em;
-  background: var(--bg-2); padding: 0.1em 0.35em; border-radius: 3px;
+  background: var(--bg-2); color: var(--ink);
+  padding: 0.1em 0.35em; border-radius: 3px;
 }
+.prose pre {
+  padding: clamp(0.85rem, 2.5vw, 1.15rem);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--board-line);
+  overflow-x: auto;
+}
+.prose pre code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: none;
+  padding: 0;
+}
+/* Optional depth: the rigorous restatement, folded away by default */
+.prose details {
+  padding: 0.9rem 1.1rem;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+}
+.prose details summary {
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+}
+.prose details[open] summary { margin-bottom: 0.9rem; }
+.prose details > *:not(summary) { margin-top: 0.9rem; }
+
 .prose blockquote {
   border-left: 2px solid var(--accent);
   padding-left: 1rem; margin-left: 0;
