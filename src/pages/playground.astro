@@ -2,19 +2,21 @@
 import Base from '../layouts/Base.astro';
 import PageHeader from '../components/PageHeader.astro';
 import { noteFor } from '../data/site';
+import SplitFlapToy from '../components/experiments/SplitFlapToy.astro';
 
 // Edit this list to add experiments. Give each a link (href) if there's a demo.
 const experiments = [
   {
-    title: 'Split-flap toy',
-    note: 'Type anything and the tiles turn over to spell it. Playable at the bottom of the homepage.',
+    title: 'Bitcoin mining game',
+    note: 'Hunt for a nonce whose SHA-256 hash starts with enough zeros. Playable at the bottom of the homepage.',
     href: '/#latest-title',
     tag: 'Latest',
   },
   {
-    title: 'Your next experiment',
-    note: 'Drop demos, sketches and interactive bits here as you build them.',
-    tag: 'WIP',
+    title: 'Split-flap toy',
+    note: 'Type anything and the tiles turn over to spell it, the same way the board does.',
+    href: '#split-flap',
+    tag: 'CSS · JS',
   },
 ];
 ---
@@ -44,6 +46,12 @@ const experiments = [
           </li>
         ))}
       </ul>
+
+      <section class="demo" id="split-flap">
+        <h2 class="demo__title">Split-flap toy</h2>
+        <p class="demo__note">Type anything, up to ten characters.</p>
+        <SplitFlapToy />
+      </section>
     </div>
   </main>
 </Base>
@@ -83,4 +91,13 @@ const experiments = [
     align-self: center;
   }
   .play__note { grid-column: 1 / -1; color: var(--ink-2); font-size: var(--step--1); }
+
+  .demo {
+    margin-top: clamp(2.5rem, 7vh, 4rem);
+    padding-top: clamp(1.5rem, 4vh, 2.25rem);
+    border-top: 1px solid var(--line);
+    scroll-margin-top: 2rem;
+  }
+  .demo__title { font-size: var(--step-1); }
+  .demo__note { margin: 0.4rem 0 1.35rem; color: var(--muted); font-size: var(--step--1); }
 </style>

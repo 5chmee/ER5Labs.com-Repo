@@ -8,11 +8,11 @@
 //   3. Update the title/blurb/added values
 // That's it. The homepage picks it up automatically.
 // ===========================================================================
-import SplitFlapToy from './experiments/SplitFlapToy.astro';
+import BitcoinMiner from './experiments/BitcoinMiner.astro';
 
-const title = 'Split-flap toy';
+const title = 'Bitcoin mining game';
 const blurb =
-  'Type anything and the tiles turn over to spell it, the same mechanism the board at the top of this page runs on.';
+  'Proof of work, played by hand. Hunt for a nonce whose SHA-256 hash starts with enough zeros, the same puzzle real miners race to solve. The hashing is real, the coins are not: it runs only when you ask it to, at whatever share of your processor you choose.';
 const added = 'July 2026';
 ---
 <section class="latest section container band" aria-labelledby="latest-title">
@@ -26,7 +26,7 @@ const added = 'July 2026';
       <p class="latest__blurb">{blurb}</p>
 
       <div class="latest__stage">
-        <SplitFlapToy />
+        <BitcoinMiner />
       </div>
 
       <a class="latest__more link-underline" href="/playground">See the rest of the Playground</a>

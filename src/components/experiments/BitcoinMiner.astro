@@ -1,0 +1,468 @@
+---
+// Bitcoin mining game: a real proof-of-work puzzle, played for fun.
+//
+// IMPORTANT, please keep these properties if you edit this file:
+//  * It is a SIMULATION. It hashes a made-up block header locally. There is no
+//    pool, no wallet, no network request, no cryptocurrency. The "BTC" figure
+//    is a score and nothing more. Never describe it as earning real coins.
+//  * Nothing computes until the visitor reads the notice and opts in, and then
+//    presses Start. No work happens on page load.
+//  * The visitor chooses how much processor time to give it, and it stops
+//    itself when the tab goes to the background.
+// Those three properties are what separate an educational demo from
+// cryptojacking, which browsers and antivirus software rightly block.
+---
+<div class="miner">
+  <!-- Consent gate: the game stays inert until this is accepted -->
+  <div class="miner__consent" id="m-consent">
+    <h4 class="miner__consent-title">Before you start</h4>
+    <ul class="miner__consent-list">
+      <li>
+        This solves a real SHA-256 puzzle <strong>on your own device</strong>, so it uses
+        some processor time while it runs.
+      </li>
+      <li>
+        It is a <strong>simulation</strong>. No cryptocurrency is mined, earned, paid or
+        transferred, to you, to me or to anyone. Nothing is sent anywhere and no wallet or
+        mining pool is involved. The BTC figure is only a score.
+      </li>
+      <li>
+        Nothing runs until you press Start. You choose how much processor to give it, you
+        can stop at any moment, and it pauses itself if you switch tabs.
+      </li>
+    </ul>
+    <button type="button" class="miner__btn miner__btn--go" id="m-agree">
+      I understand, show the demo
+    </button>
+  </div>
+
+  <div class="miner__game" id="m-game" hidden>
+    <div class="miner__stats">
+      <div class="miner__stat">
+        <span class="miner__k">Blocks</span>
+        <span class="miner__v" id="m-blocks">0</span>
+      </div>
+      <div class="miner__stat">
+        <span class="miner__k">Hashes tried</span>
+        <span class="miner__v" id="m-hashes">0</span>
+      </div>
+      <div class="miner__stat">
+        <span class="miner__k">Hash rate</span>
+        <span class="miner__v" id="m-rate">0 H/s</span>
+      </div>
+      <div class="miner__stat">
+        <span class="miner__k">Score</span>
+        <span class="miner__v" id="m-reward">0.000 BTC</span>
+      </div>
+    </div>
+
+    <div class="miner__block">
+      <div class="miner__line">
+        <span class="miner__k">Block</span><span class="miner__mono" id="m-index">#1</span>
+      </div>
+      <div class="miner__line">
+        <span class="miner__k">Previous</span><span class="miner__mono miner__dim" id="m-prev">genesis block</span>
+      </div>
+      <div class="miner__line">
+        <span class="miner__k">Nonce</span><span class="miner__mono" id="m-nonce">0</span>
+      </div>
+      <div class="miner__line miner__line--hash">
+        <span class="miner__k">Hash</span>
+        <span class="miner__mono miner__hash" id="m-hash">press mine to begin</span>
+      </div>
+    </div>
+
+    <p class="miner__target">
+      Target: the hash must begin with <span class="miner__zeros" id="m-target">000</span>
+      <span class="miner__odds" id="m-odds"></span>
+    </p>
+
+    <div class="miner__controls">
+      <div class="miner__field">
+        <label for="m-diff">Difficulty</label>
+        <select id="m-diff">
+          <option value="1">1 zero</option>
+          <option value="2">2 zeros</option>
+          <option value="3" selected>3 zeros</option>
+          <option value="4">4 zeros</option>
+          <option value="5">5 zeros</option>
+        </select>
+      </div>
+
+      <div class="miner__field miner__field--range">
+        <label for="m-effort">Processor effort</label>
+        <input
+          type="range"
+          id="m-effort"
+          min="10"
+          max="100"
+          step="10"
+          value="30"
+          aria-describedby="m-effort-out"
+        />
+        <output id="m-effort-out" for="m-effort">30%</output>
+      </div>
+    </div>
+
+    <div class="miner__controls">
+      <button type="button" class="miner__btn" id="m-once">Try one nonce</button>
+      <button type="button" class="miner__btn miner__btn--go" id="m-auto">Start mining</button>
+      <button type="button" class="miner__btn" id="m-reset">Reset</button>
+      <span class="miner__status" id="m-status" role="status" aria-live="polite">Idle</span>
+    </div>
+
+    <ul class="miner__chain" id="m-chain" aria-label="Blocks you have mined"></ul>
+
+    <p class="miner__note" id="m-note"></p>
+    <p class="miner__legal">
+      Simulation only. No cryptocurrency is mined, earned or transferred to anyone, and
+      nothing leaves this page. The BTC figure is a score.
+    </p>
+  </div>
+</div>
+
+<!-- Global (namespaced under .miner): chain entries are built in the script, so
+     they never carry Astro's scoping attribute. -->
+<style is:global>
+  .miner { display: grid; gap: 1rem; }
+
+  .miner__consent {
+    display: grid;
+    gap: 0.9rem;
+    justify-items: start;
+    padding: clamp(1rem, 3vw, 1.5rem);
+    background: var(--surface);
+    border: 1px solid var(--line-2);
+    border-radius: var(--radius-lg);
+  }
+  .miner__consent-title { font-size: var(--step-1); }
+  .miner__consent-list {
+    display: grid;
+    gap: 0.5rem;
+    margin: 0;
+    padding-left: 1.1rem;
+    max-width: 42rem;
+    color: var(--ink-2);
+    font-size: var(--step--1);
+    line-height: 1.6;
+  }
+  .miner__consent-list strong { color: var(--ink); }
+
+  .miner__game { display: grid; gap: 1rem; }
+
+  .miner__stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  @media (min-width: 560px) {
+    .miner__stats { grid-template-columns: repeat(4, 1fr); }
+  }
+  .miner__stat { display: grid; gap: 0.25rem; padding: 0.7rem 0.85rem; background: var(--surface); }
+  .miner__k {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.13em;
+    color: var(--muted);
+  }
+  .miner__v {
+    font-family: var(--font-mono);
+    font-size: 0.95rem;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .miner__block {
+    display: grid;
+    gap: 0.5rem;
+    padding: clamp(0.85rem, 2.5vw, 1.15rem);
+    background: var(--board-bg);
+    border: 1px solid var(--board-line);
+    border-radius: var(--radius-lg);
+  }
+  .miner__block .miner__k { color: var(--board-dim); }
+  .miner__line { display: flex; gap: 0.9rem; align-items: baseline; }
+  .miner__line .miner__k { flex: 0 0 4.6rem; }
+  .miner__mono {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--board-text);
+    word-break: break-all;
+    font-variant-numeric: tabular-nums;
+  }
+  .miner__dim { color: var(--board-dim); }
+  .miner__hash { line-height: 1.5; }
+  .miner__hash .zeros { color: var(--up); font-weight: 500; }
+  .miner__block.is-won { box-shadow: 0 0 0 1px var(--board-amber); }
+
+  .miner__target { font-family: var(--font-mono); font-size: var(--step--1); color: var(--ink-2); }
+  .miner__zeros { color: var(--accent); }
+  .miner__odds { color: var(--muted); }
+
+  .miner__controls { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; }
+  .miner__field {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+  }
+  .miner__field select {
+    font-family: var(--font-mono);
+    font-size: var(--step--1);
+    text-transform: none;
+    letter-spacing: 0;
+    padding: 0.4rem 0.5rem;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--line-2);
+    border-radius: var(--radius);
+  }
+  .miner__field--range input { accent-color: var(--accent); width: 8.5rem; }
+  .miner__field output { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+  .miner__btn {
+    padding: 0.5rem 0.85rem;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    color: var(--ink-2);
+    background: var(--surface);
+    border: 1px solid var(--line-2);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: color var(--transition), border-color var(--transition);
+  }
+  .miner__btn:hover { color: var(--accent); border-color: var(--accent); }
+  .miner__btn--go { color: var(--on-accent); background: var(--accent); border-color: var(--accent); }
+  .miner__btn--go:hover { color: var(--on-accent); background: var(--accent-2); border-color: var(--accent-2); }
+  .miner__btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .miner__status {
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+  }
+  .miner__status[data-on='true'] { color: var(--up); }
+
+  .miner__chain {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0;
+  }
+  .miner__chain li {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.45rem;
+    padding: 0.3rem 0.6rem;
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    color: var(--ink-2);
+    background: var(--bg-2);
+    border: 1px solid var(--line-2);
+    border-radius: var(--radius);
+  }
+  .miner__chain li b { color: var(--accent); font-weight: 500; }
+
+  .miner__note,
+  .miner__legal {
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+  .miner__legal { color: var(--ink-2); }
+</style>
+
+<script>
+  const root = document.querySelector('.miner');
+  if (root && window.crypto?.subtle) {
+    const $ = (id: string) => document.getElementById(id)!;
+    const enc = new TextEncoder();
+
+    // ---- consent gate: nothing below runs until this is accepted -----------
+    const CONSENT_KEY = 'er5-miner-consent';
+    const gate = $('m-consent');
+    const game = $('m-game');
+    const reveal = () => {
+      gate.hidden = true;
+      game.hidden = false;
+    };
+    try {
+      if (localStorage.getItem(CONSENT_KEY) === 'yes') reveal();
+    } catch (e) {}
+    $('m-agree').addEventListener('click', () => {
+      try { localStorage.setItem(CONSENT_KEY, 'yes'); } catch (e) {}
+      reveal();
+      ($('m-auto') as HTMLButtonElement).focus();
+    });
+
+    const sha256 = async (s: string) => {
+      const buf = await crypto.subtle.digest('SHA-256', enc.encode(s));
+      const bytes = new Uint8Array(buf);
+      let out = '';
+      for (let i = 0; i < bytes.length; i++) out += bytes[i].toString(16).padStart(2, '0');
+      return out;
+    };
+
+    const GENESIS = '0'.repeat(64);
+    const REWARD = 3.125; // matches the real block subsidy, for flavour only
+    let difficulty = 3;
+    let index = 1;
+    let prev = GENESIS;
+    let nonce = 0;
+    let hashes = 0;
+    let blocks = 0;
+    let rate = 0;
+    let mining = false;
+
+    const target = () => '0'.repeat(difficulty);
+    const payload = () => `${index}|${prev}|ER5Labs|${nonce}`;
+    const short = (h: string) => `${h.slice(0, 6)}…${h.slice(-4)}`;
+    const num = (n: number) => n.toLocaleString('en-GB');
+    const effort = () => Number(($('m-effort') as HTMLInputElement).value) / 100;
+
+    const paintHash = (h: string) => {
+      const lead = (h.match(/^0*/) || [''])[0];
+      $('m-hash').innerHTML = lead
+        ? `<span class="zeros">${lead}</span>${h.slice(lead.length)}`
+        : h;
+    };
+
+    const setStatus = (text: string, on = false) => {
+      const el = $('m-status');
+      el.textContent = text;
+      el.setAttribute('data-on', String(on));
+    };
+
+    const paintStats = () => {
+      $('m-blocks').textContent = String(blocks);
+      $('m-hashes').textContent = num(hashes);
+      $('m-rate').textContent = `${num(rate)} H/s`;
+      $('m-reward').textContent = `${(blocks * REWARD).toFixed(3)} BTC`;
+      $('m-index').textContent = `#${index}`;
+      $('m-prev').textContent = prev === GENESIS ? 'genesis block' : short(prev);
+      $('m-nonce').textContent = num(nonce);
+      $('m-target').textContent = target();
+      $('m-odds').textContent = ` (about 1 in ${num(Math.pow(16, difficulty))} hashes)`;
+      const perYear = rate * 60 * 60 * 24 * 365;
+      $('m-note').textContent = rate
+        ? `For scale: a real block takes the whole Bitcoin network roughly 10²³ hashes. At ${num(rate)} H/s this browser would need on the order of ${(1e23 / perYear).toExponential(1)} years to find one, which is why nobody mines in a browser.`
+        : 'For scale: a real block takes the whole Bitcoin network roughly 10²³ hashes, which is why nobody mines Bitcoin in a browser.';
+    };
+
+    const addChip = (h: string) => {
+      const li = document.createElement('li');
+      li.innerHTML = `<b>#${index - 1}</b> ${short(h)}`;
+      const chain = $('m-chain');
+      chain.prepend(li);
+      while (chain.children.length > 8) chain.lastElementChild?.remove();
+    };
+
+    const won = (h: string) => {
+      blocks++;
+      addChip(h);
+      prev = h;
+      index++;
+      nonce = 0;
+      const blockEl = root.querySelector('.miner__block') as HTMLElement;
+      blockEl.classList.add('is-won');
+      window.setTimeout(() => blockEl.classList.remove('is-won'), 1200);
+      setStatus(`Block #${index - 1} found`, mining);
+      paintStats();
+    };
+
+    const tryOne = async () => {
+      nonce++;
+      const h = await sha256(payload());
+      hashes++;
+      paintHash(h);
+      if (h.startsWith(target())) won(h);
+      paintStats();
+    };
+
+    const loop = async () => {
+      if (!mining) return;
+      const CHUNK = 150;
+      const t0 = performance.now();
+      let last = '';
+      for (let i = 0; i < CHUNK; i++) {
+        nonce++;
+        last = await sha256(payload());
+        hashes++;
+        if (last.startsWith(target())) {
+          paintHash(last);
+          won(last);
+          window.setTimeout(() => { if (mining) loop(); }, 900);
+          return;
+        }
+      }
+      const dt = performance.now() - t0;
+      // Duty-cycle to whatever share of the processor the visitor asked for:
+      // work for dt, then idle so that dt / (dt + idle) matches their choice.
+      const e = effort();
+      const idle = e >= 1 ? 0 : Math.min(500, Math.round((dt * (1 - e)) / e));
+      // Report the effective rate, idle time included, so the number reflects
+      // the effort setting rather than flattering it.
+      if (dt + idle > 0) rate = Math.round(CHUNK / ((dt + idle) / 1000));
+      paintHash(last);
+      paintStats();
+      window.setTimeout(loop, idle);
+    };
+
+    const setMining = (on: boolean, why?: string) => {
+      mining = on;
+      const btn = $('m-auto') as HTMLButtonElement;
+      btn.textContent = on ? 'Stop mining' : 'Start mining';
+      ($('m-once') as HTMLButtonElement).disabled = on;
+      if (on) {
+        setStatus(`Mining at ${Math.round(effort() * 100)}% effort`, true);
+        loop();
+      } else {
+        rate = 0;
+        setStatus(why || 'Stopped');
+        paintStats();
+      }
+    };
+
+    $('m-once').addEventListener('click', () => { void tryOne(); });
+    $('m-auto').addEventListener('click', () => setMining(!mining));
+    $('m-reset').addEventListener('click', () => {
+      setMining(false, 'Reset');
+      index = 1; prev = GENESIS; nonce = 0; hashes = 0; blocks = 0; rate = 0;
+      $('m-chain').innerHTML = '';
+      $('m-hash').textContent = 'press mine to begin';
+      paintStats();
+    });
+    $('m-diff').addEventListener('change', (e) => {
+      difficulty = Number((e.target as HTMLSelectElement).value);
+      nonce = 0;
+      paintStats();
+    });
+    $('m-effort').addEventListener('input', () => {
+      const pct = Math.round(effort() * 100);
+      ($('m-effort-out') as HTMLOutputElement).value = `${pct}%`;
+      if (mining) setStatus(`Mining at ${pct}% effort`, true);
+    });
+
+    // Never keep burning processor time on a tab the visitor has left.
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && mining) setMining(false, 'Paused, you left the tab');
+    });
+
+    paintStats();
+    setStatus('Idle');
+  }
+</script>

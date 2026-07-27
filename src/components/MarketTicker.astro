@@ -37,7 +37,9 @@ import { instruments } from '../data/markets';
     animation: tickerScroll 110s linear infinite;
   }
   .ticker:hover .ticker__track,
-  .ticker:focus-within .ticker__track { animation-play-state: paused; }
+  .ticker:focus-within .ticker__track,
+  /* Don't spend compositor time scrolling a strip nobody can see. */
+  .ticker.is-offscreen .ticker__track { animation-play-state: paused; }
 
   .ticker__row { display: flex; align-items: center; }
 
@@ -134,5 +136,14 @@ import { instruments } from '../data/markets';
     load();
     window.setInterval(load, 60000);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });
+
+    // Stop the scroll animation once the strip leaves the viewport.
+    const strip = document.querySelector('.ticker');
+    if (strip && 'IntersectionObserver' in window) {
+      new IntersectionObserver(
+        ([e]) => strip.classList.toggle('is-offscreen', !e.isIntersecting),
+        { threshold: 0 }
+      ).observe(strip);
+    }
   }
 </script>

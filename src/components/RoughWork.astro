@@ -389,6 +389,19 @@ const band = (a: number, b: number) => {
     animation-delay: 2s;
   }
 
+  /* These panels sit at the foot of a long page, so idle them while they are
+     scrolled out of sight rather than animating twenty elements for nobody. */
+  .rw.is-paused .it,
+  .rw.is-paused .fib,
+  .rw.is-paused .fib__spiral,
+  .rw.is-paused .gold__sq,
+  .rw.is-paused .nd__curve,
+  .rw.is-paused .nd__band,
+  .rw.is-paused .nd__pct,
+  .rw.is-paused .bulb__glow,
+  .rw.is-paused .wire__flow,
+  .rw.is-paused .slat { animation-play-state: paused; }
+
   @media (prefers-reduced-motion: reduce) {
     .it, .fib, .gold__sq, .nd__band, .nd__pct { animation: none; opacity: 1; }
     .it--1, .it--2 { display: none; }
@@ -399,3 +412,15 @@ const band = (a: number, b: number) => {
     .spark { display: none; }
   }
 </style>
+
+<script>
+  // Idle the sketch animations whenever the section is off-screen.
+  const rw = document.querySelector('.rw');
+  if (rw && 'IntersectionObserver' in window) {
+    rw.classList.add('is-paused');
+    new IntersectionObserver(
+      ([e]) => rw.classList.toggle('is-paused', !e.isIntersecting),
+      { threshold: 0 }
+    ).observe(rw);
+  }
+</script>
