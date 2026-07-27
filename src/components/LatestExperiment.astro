@@ -2,32 +2,38 @@
 // ===========================================================================
 // LATEST ADDITION TO THE PLAYGROUND — shown at the bottom of the homepage.
 //
-// TO SWAP IN A NEW EXPERIMENT:
-//   1. Build it as a component in src/components/experiments/
-//   2. Change the import below to point at it
-//   3. Update the title/blurb/added values
-// That's it. The homepage picks it up automatically.
+// The metadata comes from src/data/playground.ts: whichever experiment is
+// first in that list is the one shown here. To swap it, reorder that list and
+// register the component in the DEMOS map below (same map as
+// src/pages/playground/[slug].astro).
 // ===========================================================================
+import { latest } from '../data/playground';
 import BitcoinMiner from './experiments/BitcoinMiner.astro';
+import SplitFlapToy from './experiments/SplitFlapToy.astro';
 
-const title = 'Bitcoin mining game';
-const blurb =
-  'Proof of work, played by hand. Hunt for a nonce whose SHA-256 hash starts with enough zeros, the same puzzle real miners race to solve. The hashing is real, the coins are not: it runs only when you ask it to, at whatever share of your processor you choose.';
-const added = 'July 2026';
+const DEMOS: Record<string, any> = {
+  'bitcoin-mining-game': BitcoinMiner,
+  'split-flap-toy': SplitFlapToy,
+};
+const Demo = DEMOS[latest.slug];
 ---
 <section class="latest section container band" aria-labelledby="latest-title">
   <div class="grid2">
     <h2 class="eyebrow" id="latest-title">Latest in the Playground</h2>
     <div>
       <div class="latest__head">
-        <h3 class="latest__name">{title}</h3>
-        <span class="latest__date">Added {added}</span>
+        <h3 class="latest__name">
+          <a class="latest__link" href={`/playground/${latest.slug}`}>{latest.title}</a>
+        </h3>
+        <span class="latest__date">Added {latest.added}</span>
       </div>
-      <p class="latest__blurb">{blurb}</p>
+      <p class="latest__blurb">{latest.intro}</p>
 
-      <div class="latest__stage">
-        <BitcoinMiner />
-      </div>
+      {Demo && (
+        <div class="latest__stage">
+          <Demo />
+        </div>
+      )}
 
       <a class="latest__more link-underline" href="/playground">See the rest of the Playground</a>
     </div>
@@ -50,6 +56,8 @@ const added = 'July 2026';
     gap: 0.4rem 1rem;
   }
   .latest__name { font-size: var(--step-1); }
+  .latest__link { transition: color var(--transition); }
+  .latest__link:hover { color: var(--accent); }
   .latest__date {
     font-family: var(--font-mono);
     font-size: 0.66rem;

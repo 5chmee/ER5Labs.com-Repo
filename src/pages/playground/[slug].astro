@@ -1,0 +1,47 @@
+---
+import Base from '../../layouts/Base.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import { experiments } from '../../data/playground';
+
+// Register each experiment's component here. Astro components can only be
+// imported from .astro files, which is why this map lives beside the page
+// rather than in src/data/playground.ts.
+import BitcoinMiner from '../../components/experiments/BitcoinMiner.astro';
+import SplitFlapToy from '../../components/experiments/SplitFlapToy.astro';
+
+const DEMOS: Record<string, any> = {
+  'bitcoin-mining-game': BitcoinMiner,
+  'split-flap-toy': SplitFlapToy,
+};
+
+export function getStaticPaths() {
+  return experiments.map((e) => ({ params: { slug: e.slug }, props: { experiment: e } }));
+}
+
+const { experiment } = Astro.props;
+const Demo = DEMOS[experiment.slug];
+---
+<Base title={`${experiment.title} · ER5Labs`} description={experiment.note}>
+  <main id="main">
+    <PageHeader
+      kicker={`Playground · ${experiment.added}`}
+      title={experiment.title}
+      lead={experiment.intro}
+      back={{ href: '/playground', label: 'Playground' }}
+    />
+    <div class="container section--tight">
+      {Demo ? <Demo /> : <p class="missing">This experiment has not been wired up yet.</p>}
+    </div>
+  </main>
+</Base>
+
+<style>
+  .missing {
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    color: var(--muted);
+    background: var(--bg-2);
+    border: 1px dashed var(--line-2);
+    border-radius: var(--radius-lg);
+  }
+</style>

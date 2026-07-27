@@ -1,0 +1,81 @@
+---
+import Base from '../../layouts/Base.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import { noteFor } from '../../data/site';
+import { experiments } from '../../data/playground';
+
+// This page is a list only. Each demo lives on its own page so nothing heavy
+// loads until a visitor actually chooses to open it.
+---
+<Base title="Playground · ER5Labs" description="Experiments and demos by Emad Rafiq.">
+  <main id="main">
+    <PageHeader
+      title="Playground"
+      lead={noteFor('/playground')}
+    />
+    <div class="container section--tight">
+      <ul class="play">
+        {experiments.map((x) => (
+          <li class="play__item">
+            <a class="play__link" href={`/playground/${x.slug}`}>
+              <span class="play__title">{x.title}</span>
+              <span class="play__tag">{x.tag}</span>
+              <span class="play__note">{x.note}</span>
+              <span class="play__open" aria-hidden="true">Open &rarr;</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </main>
+</Base>
+
+<style>
+  .play {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 1rem;
+  }
+  @media (min-width: 680px) {
+    .play { grid-template-columns: repeat(2, 1fr); }
+  }
+  .play__link {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.5rem 1rem;
+    height: 100%;
+    align-content: start;
+    padding: clamp(1.25rem, 3vw, 1.75rem);
+    border: 1px solid var(--line-2);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    color: var(--ink);
+    transition: border-color var(--transition), transform var(--transition);
+  }
+  a.play__link:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .play__title { font-size: var(--step-1); font-weight: 600; }
+  .play__tag {
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    align-self: center;
+  }
+  .play__note { grid-column: 1 / -1; color: var(--ink-2); font-size: var(--step--1); }
+  .play__open {
+    grid-column: 1 / -1;
+    margin-top: 0.6rem;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    opacity: 0;
+    transform: translateX(-4px);
+    transition: opacity var(--transition), transform var(--transition);
+  }
+  a.play__link:hover .play__open,
+  a.play__link:focus-visible .play__open { opacity: 1; transform: translateX(0); }
+</style>
