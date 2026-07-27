@@ -57,6 +57,10 @@ const path = Astro.url.pathname.replace(/\/+$/, '') || '/';
     z-index: 140;
     display: flex;
     align-items: center;
+    /* This container is the full height of the viewport, so it must not take
+       the pointer itself or it swallows clicks on anything behind it, above
+       and below the panel. Only the edge strip and the revealed panel do. */
+    pointer-events: none;
   }
   .sidenav--left { left: 0; justify-content: flex-start; }
   .sidenav--right { right: 0; justify-content: flex-end; }
@@ -67,6 +71,7 @@ const path = Astro.url.pathname.replace(/\/+$/, '') || '/';
     top: 0;
     bottom: 0;
     width: 22px;
+    pointer-events: auto;
   }
   .sidenav--left .sidenav__zone { left: 0; }
   .sidenav--right .sidenav__zone { right: 0; }
@@ -79,8 +84,10 @@ const path = Astro.url.pathname.replace(/\/+$/, '') || '/';
     background: color-mix(in srgb, var(--surface) 90%, transparent);
     box-shadow: 0 14px 40px rgba(0, 0, 0, 0.14);
     backdrop-filter: blur(10px);
-    /* Hidden by default — slid off toward its own edge and faded out */
+    /* Hidden by default: slid off toward its own edge and faded out, and
+       inert until it is actually on screen. */
     opacity: 0;
+    pointer-events: none;
     transition: transform 260ms cubic-bezier(0.4, 0, 0.2, 1), opacity 220ms ease;
   }
   .sidenav--left .sidenav__panel { margin-left: 0.6rem; transform: translateX(-118%); }
@@ -91,6 +98,7 @@ const path = Astro.url.pathname.replace(/\/+$/, '') || '/';
   .sidenav:focus-within .sidenav__panel {
     opacity: 1;
     transform: translateX(0);
+    pointer-events: auto;
   }
 
   .sidenav__list {
