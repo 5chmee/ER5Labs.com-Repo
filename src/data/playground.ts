@@ -18,8 +18,9 @@ export type Experiment = {
   title: string;
   tag: string;
   added: string;
-  note: string;   // one line, shown on the Playground card
-  intro: string;  // longer line, shown on the experiment's own page
+  note: string;      // one line, shown on the Playground card
+  intro: string;     // longer line, shown on the experiment's own page
+  writeup?: string;  // optional link to an entry explaining how it works
 };
 
 export const experiments: Experiment[] = [
@@ -30,7 +31,8 @@ export const experiments: Experiment[] = [
     added: 'July 2026',
     note: 'Hash the real header of the latest Bitcoin block, the same double SHA-256 the network runs.',
     intro:
-      'Proof of work against a genuine block. The 80-byte header comes live from the Bitcoin network and the hashing is real double SHA-256, so feeding it the real winning nonce reproduces that block\'s actual hash. The payout is the only part that is not real: the true target needs around 10²³ hashes, so you are scored against an easier practice target while the real one sits alongside for scale.',
+      'Proof of work against a genuine block. The 80-byte header comes live from the Bitcoin network and the hashing is real double SHA-256 running in a pool of Web Workers, so feeding it the real winning nonce reproduces that block\'s actual hash. The payout is the only part that is not real: the true target needs around 10²³ hashes, so you are scored against an easier practice target while the real target, the retarget maths and the profitability model sit alongside it.',
+    writeup: '/entries/mining-a-real-block-in-the-browser',
   },
   {
     slug: 'split-flap-toy',

@@ -1,52 +1,47 @@
 ---
-// Bitcoin mining game, played against a REAL block.
+// Bitcoin mining lab.
 //
-// What is real here: the 80-byte header (version, previous hash, merkle root,
-// timestamp, bits, nonce) is the genuine header of the latest block on the
-// Bitcoin network, fetched live. The hashing is real double SHA-256, the same
-// function miners run. Feed it the real winning nonce and it reproduces that
-// block's real hash exactly.
+// Real: the 80-byte header of the current block (live), real double SHA-256
+// (hand-written, in a Web Worker pool), the real compact target, the real
+// retarget maths, live network hashrate and price, and a live WebSocket feed
+// of new blocks as they are found.
 //
-// What is not real: the payout. Nobody can win Bitcoin here, because the real
-// target needs ~10^23 hashes and a browser manages ~10^4-10^6 per second. So
-// the game scores you against a much easier PRACTICE target while showing the
-// real one alongside, for scale.
+// Not real: the payout. A browser does ~10^5 H/s against a network at ~10^20,
+// so nothing can be won here. Nothing is submitted anywhere, there is no pool
+// and no wallet. Visitors are scored against an easier practice target.
 //
-// Please keep these guardrails if you edit this file:
-//   * nothing computes until the visitor opts in and presses Start
-//   * the visitor sets what share of the processor to use
-//   * it stops itself when the tab goes to the background
-//   * no coins are mined, earned or transferred, and nothing is submitted
-//     anywhere. There is no pool, no wallet and no payout.
+// Guardrails to keep: opt-in before anything runs, visitor-chosen core count
+// and effort, automatic stop when the tab is hidden.
 ---
 <div class="miner">
   <div class="miner__consent" id="m-consent">
     <h4 class="miner__consent-title">Before you start</h4>
     <ul class="miner__consent-list">
       <li>
-        This runs real double SHA-256 <strong>on your own device</strong> against the real
-        header of the latest Bitcoin block, so it uses some processor time while it runs.
+        This runs real double SHA-256 <strong>on your own device</strong>, in background
+        threads, against the real header of the current Bitcoin block.
       </li>
       <li>
         <strong>Nothing is earned.</strong> No cryptocurrency is mined, paid or transferred,
-        to you, to me or to anyone. No wallet, no mining pool, nothing submitted anywhere.
-        The real target needs about 10<sup>23</sup> hashes, so you are scored against a much
-        easier practice target instead.
+        to you, to me or to anyone. No wallet, no pool, nothing submitted. The real target
+        needs about 10<sup>23</sup> hashes, so you are scored against an easier practice
+        target instead.
       </li>
       <li>
-        Nothing runs until you press Start. You choose how much processor to give it, you
-        can stop at any moment, and it pauses itself if you switch tabs.
+        Nothing runs until you press Start. You choose how many cores and how much of each
+        to use, you can stop at any moment, and it pauses itself if you switch tabs.
       </li>
     </ul>
     <button type="button" class="miner__btn miner__btn--go" id="m-agree">
-      I understand, show the demo
+      I understand, show the lab
     </button>
   </div>
 
   <div class="miner__game" id="m-game" hidden>
+    <!-- 1. Live network state -->
     <div class="miner__stats">
       <div class="miner__stat">
-        <span class="miner__k">Real block</span>
+        <span class="miner__k">Chain tip</span>
         <span class="miner__v" id="m-height">…</span>
       </div>
       <div class="miner__stat">
@@ -58,11 +53,12 @@
         <span class="miner__v" id="m-rate">0 H/s</span>
       </div>
       <div class="miner__stat">
-        <span class="miner__k">Practice blocks</span>
-        <span class="miner__v" id="m-blocks">0</span>
+        <span class="miner__k">Live feed</span>
+        <span class="miner__v miner__v--sm" id="m-ws">connecting…</span>
       </div>
     </div>
 
+    <!-- 2. The real header being hashed -->
     <div class="miner__block">
       <p class="miner__hdr">Real 80-byte block header</p>
       <div class="miner__line"><span class="miner__k">Version</span><span class="miner__mono" id="m-version">…</span></div>
@@ -72,137 +68,162 @@
       <div class="miner__line"><span class="miner__k">Nonce</span><span class="miner__mono" id="m-nonce">0</span></div>
       <div class="miner__line miner__line--hash">
         <span class="miner__k">Hash</span>
-        <span class="miner__mono miner__hash" id="m-hash">press mine to begin</span>
+        <span class="miner__mono miner__hash" id="m-hash">press start to begin</span>
       </div>
     </div>
 
     <p class="miner__target">
-      Practice target: hash begins with <span class="miner__zeros" id="m-target">0000</span>
+      Practice target: begins with <span class="miner__zeros" id="m-target">0000</span>
       <span class="miner__odds" id="m-odds"></span>
     </p>
     <p class="miner__target">
       Real target: <span class="miner__mono miner__dim" id="m-realtarget">…</span>
     </p>
 
+    <!-- 3. Controls -->
     <div class="miner__controls">
+      <div class="miner__field">
+        <label for="m-cores">Cores</label>
+        <input type="range" id="m-cores" min="1" max="8" step="1" value="2" aria-describedby="m-cores-out" />
+        <output id="m-cores-out" for="m-cores">2</output>
+      </div>
+      <div class="miner__field">
+        <label for="m-effort">Effort per core</label>
+        <input type="range" id="m-effort" min="10" max="100" step="10" value="30" aria-describedby="m-effort-out" />
+        <output id="m-effort-out" for="m-effort">30%</output>
+      </div>
       <div class="miner__field">
         <label for="m-diff">Practice difficulty</label>
         <select id="m-diff">
-          <option value="3">3 zeros</option>
-          <option value="4" selected>4 zeros</option>
-          <option value="5">5 zeros</option>
+          <option value="4">4 zeros</option>
+          <option value="5" selected>5 zeros</option>
           <option value="6">6 zeros</option>
           <option value="7">7 zeros</option>
         </select>
       </div>
-
-      <div class="miner__field miner__field--range">
-        <label for="m-effort">Processor effort</label>
-        <input type="range" id="m-effort" min="10" max="100" step="10" value="30" aria-describedby="m-effort-out" />
-        <output id="m-effort-out" for="m-effort">30%</output>
-      </div>
     </div>
-
     <div class="miner__controls">
-      <button type="button" class="miner__btn" id="m-once">Try one nonce</button>
-      <button type="button" class="miner__btn" id="m-real">Use the real winning nonce</button>
       <button type="button" class="miner__btn miner__btn--go" id="m-auto">Start mining</button>
+      <button type="button" class="miner__btn" id="m-real">Use the real winning nonce</button>
       <button type="button" class="miner__btn" id="m-reset">Reset</button>
-      <span class="miner__status" id="m-status" role="status" aria-live="polite">Loading block…</span>
+      <span class="miner__status" id="m-status" role="status" aria-live="polite">Idle</span>
     </div>
 
-    <ul class="miner__chain" id="m-chain" aria-label="Practice hits you have found"></ul>
+    <ul class="miner__chain" id="m-chain" aria-label="Practice targets you have hit"></ul>
 
-    <p class="miner__note" id="m-note"></p>
+    <!-- 4. Probability model -->
+    <section class="miner__panel">
+      <h4 class="miner__panel-title">Probability of a hit over time</h4>
+      <p class="miner__panel-note">
+        Each nonce is an independent trial with success probability p = 16<sup>−d</sup>, so the
+        wait is geometric. In continuous time that is exponential, which is why block arrivals
+        across the network are Poisson.
+      </p>
+      <svg class="miner__chart" viewBox="0 0 320 130" role="img" aria-label="Probability of finding a hit against elapsed time">
+        <line class="ax" x1="34" y1="104" x2="310" y2="104" />
+        <line class="ax" x1="34" y1="10" x2="34" y2="104" />
+        <line class="grid" x1="34" y1="57" x2="310" y2="57" />
+        <line class="grid" x1="34" y1="33" x2="310" y2="33" />
+        <text class="lbl" x="30" y="107" text-anchor="end">0</text>
+        <text class="lbl" x="30" y="60" text-anchor="end">50%</text>
+        <text class="lbl" x="30" y="14" text-anchor="end">100%</text>
+        <path class="curve" id="m-curve" d="" />
+        <line class="median" id="m-median" x1="0" y1="10" x2="0" y2="104" />
+        <text class="lbl" id="m-median-lbl" x="0" y="122" text-anchor="middle"></text>
+        <text class="lbl" x="310" y="122" text-anchor="end" id="m-xmax"></text>
+      </svg>
+      <p class="miner__stat-line" id="m-prob">Start mining to model your own rate.</p>
+    </section>
+
+    <!-- 5. Difficulty retarget -->
+    <section class="miner__panel">
+      <h4 class="miner__panel-title">Difficulty retarget</h4>
+      <p class="miner__panel-note">
+        Every 2016 blocks the network rescales the target so blocks average ten minutes:
+        <span class="miner__formula">next = current × (2016 × 600) / actual seconds</span>, clamped
+        to a factor of four either way.
+      </p>
+      <div class="miner__bar" aria-hidden="true"><span id="m-epoch"></span></div>
+      <p class="miner__stat-line" id="m-retarget">…</p>
+    </section>
+
+    <!-- 6. Expected value -->
+    <section class="miner__panel">
+      <h4 class="miner__panel-title">Expected value of real hardware</h4>
+      <p class="miner__panel-note">
+        The same maths applied to an actual rig. Revenue is your share of the network times
+        the daily issuance, so profit per day is
+        <span class="miner__formula">(H ÷ H<sub>net</sub>) × 144 × 3.125 × price × (1 − fee) − kW × 24 × tariff</span>.
+      </p>
+      <div class="miner__inputs">
+        <label>Hash rate (TH/s)<input type="number" id="ev-hash" value="200" min="0" step="10" /></label>
+        <label>Power (W)<input type="number" id="ev-watt" value="3500" min="0" step="50" /></label>
+        <label>Tariff (£/kWh)<input type="number" id="ev-tariff" value="0.25" min="0" step="0.01" /></label>
+        <label>Pool fee (%)<input type="number" id="ev-fee" value="2" min="0" max="100" step="0.5" /></label>
+        <label>Hardware cost (£)<input type="number" id="ev-capex" value="4000" min="0" step="100" /></label>
+      </div>
+      <dl class="miner__out" id="ev-out"></dl>
+      <p class="miner__panel-note" id="ev-note"></p>
+    </section>
+
     <p class="miner__legal">
-      The header and the hashing are real. The payout is not: no cryptocurrency is mined,
-      earned or transferred to anyone, and nothing is submitted to any network.
+      The header, the hashing, the target, the retarget maths and the market data are all real.
+      The payout is not: no cryptocurrency is mined, earned or transferred to anyone, and nothing
+      is submitted to any network.
     </p>
   </div>
 </div>
 
-<!-- Global (namespaced under .miner): chain entries are built in the script, so
-     they never carry Astro's scoping attribute. -->
 <style is:global>
   .miner { display: grid; gap: 1rem; }
-
   .miner__consent {
-    display: grid;
-    gap: 0.9rem;
-    justify-items: start;
+    display: grid; gap: 0.9rem; justify-items: start;
     padding: clamp(1rem, 3vw, 1.5rem);
-    background: var(--surface);
-    border: 1px solid var(--line-2);
-    border-radius: var(--radius-lg);
+    background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--radius-lg);
   }
   .miner__consent-title { font-size: var(--step-1); }
   .miner__consent-list {
-    display: grid;
-    gap: 0.5rem;
-    margin: 0;
-    padding-left: 1.1rem;
-    max-width: 42rem;
-    color: var(--ink-2);
-    font-size: var(--step--1);
-    line-height: 1.6;
+    display: grid; gap: 0.5rem; margin: 0; padding-left: 1.1rem; max-width: 42rem;
+    color: var(--ink-2); font-size: var(--step--1); line-height: 1.6;
   }
   .miner__consent-list strong { color: var(--ink); }
 
   .miner__game { display: grid; gap: 1rem; }
 
   .miner__stats {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1px;
-    background: var(--line);
-    border: 1px solid var(--line);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px;
+    background: var(--line); border: 1px solid var(--line);
+    border-radius: var(--radius-lg); overflow: hidden;
   }
   @media (min-width: 560px) { .miner__stats { grid-template-columns: repeat(4, 1fr); } }
   .miner__stat { display: grid; gap: 0.25rem; padding: 0.7rem 0.85rem; background: var(--surface); }
   .miner__k {
-    font-family: var(--font-mono);
-    font-size: 0.6rem;
-    text-transform: uppercase;
-    letter-spacing: 0.13em;
-    color: var(--muted);
+    font-family: var(--font-mono); font-size: 0.6rem; text-transform: uppercase;
+    letter-spacing: 0.13em; color: var(--muted);
   }
   .miner__v {
-    font-family: var(--font-mono);
-    font-size: 0.95rem;
-    color: var(--ink);
+    font-family: var(--font-mono); font-size: 0.95rem; color: var(--ink);
     font-variant-numeric: tabular-nums;
   }
+  .miner__v--sm { font-size: 0.72rem; }
+  .miner__v--live { color: var(--up); }
 
   .miner__block {
-    display: grid;
-    gap: 0.45rem;
-    padding: clamp(0.85rem, 2.5vw, 1.15rem);
-    background: var(--board-bg);
-    border: 1px solid var(--board-line);
-    border-radius: var(--radius-lg);
+    display: grid; gap: 0.45rem; padding: clamp(0.85rem, 2.5vw, 1.15rem);
+    background: var(--board-bg); border: 1px solid var(--board-line); border-radius: var(--radius-lg);
   }
   .miner__hdr {
-    font-family: var(--font-mono);
-    font-size: 0.6rem;
-    text-transform: uppercase;
-    letter-spacing: 0.14em;
-    color: var(--board-amber);
-    margin-bottom: 0.2rem;
+    font-family: var(--font-mono); font-size: 0.6rem; text-transform: uppercase;
+    letter-spacing: 0.14em; color: var(--board-amber); margin-bottom: 0.2rem;
   }
   .miner__block .miner__k { color: var(--board-dim); }
   .miner__line { display: flex; gap: 0.9rem; align-items: baseline; }
   .miner__line .miner__k { flex: 0 0 5.4rem; }
   .miner__mono {
-    font-family: var(--font-mono);
-    font-size: 0.78rem;
-    color: var(--board-text);
-    word-break: break-all;
-    font-variant-numeric: tabular-nums;
+    font-family: var(--font-mono); font-size: 0.78rem; color: var(--board-text);
+    word-break: break-all; font-variant-numeric: tabular-nums;
   }
   .miner__dim { color: var(--board-dim); }
-  .miner__hash { line-height: 1.5; }
   .miner__hash .zeros { color: var(--up); font-weight: 500; }
   .miner__block.is-won { box-shadow: 0 0 0 1px var(--board-amber); }
 
@@ -210,41 +231,24 @@
   .miner__zeros { color: var(--accent); }
   .miner__odds { color: var(--muted); }
 
-  .miner__controls { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; }
+  .miner__controls { display: flex; flex-wrap: wrap; gap: 0.6rem 1rem; align-items: center; }
   .miner__field {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-family: var(--font-mono);
-    font-size: 0.66rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--muted);
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    font-family: var(--font-mono); font-size: 0.66rem; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--muted);
   }
   .miner__field select {
-    font-family: var(--font-mono);
-    font-size: var(--step--1);
-    text-transform: none;
-    letter-spacing: 0;
-    padding: 0.4rem 0.5rem;
-    color: var(--ink);
-    background: var(--surface);
-    border: 1px solid var(--line-2);
-    border-radius: var(--radius);
+    font-family: var(--font-mono); font-size: var(--step--1); text-transform: none;
+    letter-spacing: 0; padding: 0.4rem 0.5rem; color: var(--ink);
+    background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--radius);
   }
-  .miner__field--range input { accent-color: var(--accent); width: 8.5rem; }
+  .miner__field input[type='range'] { accent-color: var(--accent); width: 7rem; }
   .miner__field output { color: var(--ink); font-variant-numeric: tabular-nums; }
 
   .miner__btn {
-    padding: 0.5rem 0.85rem;
-    font-family: var(--font-mono);
-    font-size: 0.68rem;
-    letter-spacing: 0.08em;
-    color: var(--ink-2);
-    background: var(--surface);
-    border: 1px solid var(--line-2);
-    border-radius: var(--radius);
-    cursor: pointer;
+    padding: 0.5rem 0.85rem; font-family: var(--font-mono); font-size: 0.68rem;
+    letter-spacing: 0.08em; color: var(--ink-2); background: var(--surface);
+    border: 1px solid var(--line-2); border-radius: var(--radius); cursor: pointer;
     transition: color var(--transition), border-color var(--transition);
   }
   .miner__btn:hover { color: var(--accent); border-color: var(--accent); }
@@ -253,220 +257,342 @@
   .miner__btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
   .miner__status {
-    font-family: var(--font-mono);
-    font-size: 0.66rem;
-    letter-spacing: 0.06em;
-    color: var(--muted);
+    font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.06em; color: var(--muted);
   }
   .miner__status[data-on='true'] { color: var(--up); }
 
   .miner__chain { list-style: none; display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0; padding: 0; }
   .miner__chain li {
-    display: inline-flex;
-    align-items: baseline;
-    gap: 0.45rem;
-    padding: 0.3rem 0.6rem;
-    font-family: var(--font-mono);
-    font-size: 0.66rem;
-    color: var(--ink-2);
-    background: var(--bg-2);
-    border: 1px solid var(--line-2);
-    border-radius: var(--radius);
+    display: inline-flex; gap: 0.45rem; padding: 0.3rem 0.6rem;
+    font-family: var(--font-mono); font-size: 0.66rem; color: var(--ink-2);
+    background: var(--bg-2); border: 1px solid var(--line-2); border-radius: var(--radius);
   }
   .miner__chain li b { color: var(--accent); font-weight: 500; }
 
-  .miner__note, .miner__legal {
-    font-family: var(--font-mono);
-    font-size: 0.66rem;
-    line-height: 1.6;
-    color: var(--muted);
+  .miner__panel {
+    display: grid; gap: 0.7rem; padding: clamp(0.9rem, 2.5vw, 1.25rem);
+    background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius-lg);
   }
-  .miner__legal { color: var(--ink-2); }
+  .miner__panel-title { font-size: var(--step-0); }
+  .miner__panel-note { font-size: var(--step--1); line-height: 1.6; color: var(--ink-2); margin: 0; }
+  .miner__formula {
+    display: inline-block; font-family: var(--font-mono); font-size: 0.86em;
+    color: var(--accent); background: var(--surface); padding: 0.1em 0.4em;
+    border-radius: 3px; border: 1px solid var(--line);
+  }
+  .miner__stat-line {
+    font-family: var(--font-mono); font-size: 0.68rem; line-height: 1.6; color: var(--muted); margin: 0;
+  }
+
+  .miner__chart { width: 100%; height: auto; overflow: visible; }
+  .miner__chart .ax { stroke: var(--line-2); stroke-width: 1; }
+  .miner__chart .grid { stroke: var(--line); stroke-width: 1; stroke-dasharray: 2 3; }
+  .miner__chart .curve { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; }
+  .miner__chart .median { stroke: var(--up); stroke-width: 1; stroke-dasharray: 3 3; }
+  .miner__chart .lbl { fill: var(--muted); font-family: var(--font-mono); font-size: 8px; }
+
+  .miner__bar {
+    height: 10px; background: var(--surface); border: 1px solid var(--line-2);
+    border-radius: 100px; overflow: hidden;
+  }
+  .miner__bar span { display: block; height: 100%; width: 0; background: var(--accent); }
+
+  .miner__inputs { display: grid; gap: 0.6rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  @media (min-width: 640px) { .miner__inputs { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+  .miner__inputs label {
+    display: grid; gap: 0.3rem; font-family: var(--font-mono); font-size: 0.6rem;
+    text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted);
+  }
+  .miner__inputs input {
+    width: 100%; padding: 0.4rem 0.5rem; font-family: var(--font-mono);
+    font-size: var(--step--1); color: var(--ink); background: var(--surface);
+    border: 1px solid var(--line-2); border-radius: var(--radius);
+  }
+  .miner__out {
+    display: grid; gap: 0.35rem 1rem; grid-template-columns: auto 1fr; margin: 0;
+    font-family: var(--font-mono); font-size: var(--step--1);
+  }
+  .miner__out dt { color: var(--muted); }
+  .miner__out dd { margin: 0; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .miner__out dd.pos { color: var(--up); }
+  .miner__out dd.neg { color: var(--down); }
+
+  .miner__legal {
+    font-family: var(--font-mono); font-size: 0.66rem; line-height: 1.6; color: var(--ink-2);
+  }
 </style>
 
 <script>
   const root = document.querySelector('.miner');
-  if (root && window.crypto?.subtle) {
+  if (root) {
     const $ = (id: string) => document.getElementById(id)!;
+    const num = (n: number) => n.toLocaleString('en-GB');
+    const money = (n: number) =>
+      `£${n.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-    // Snapshot used only if the live lookup fails, so the demo still works.
-    // Verified: this header with this nonce reproduces the block's real hash.
+    // Verified snapshot, used only if the live lookup fails.
     const FALLBACK = {
-      height: 959820,
-      version: 543711232,
+      height: 959820, version: 543711232,
       previousblockhash: '000000000000000000018fe9dcd3b3b97a08a2a4758074cb61f6eb13f8edad39',
       merkle_root: 'e875a5aceb380c19562f4964b5a24e3af1b591fafb9ba68523d3f4a5d8b3fcb1',
-      timestamp: 1785144795,
-      bits: 386022100,
-      nonce: 3692993034,
-      difficulty: 126231507121868.2,
-      networkHashrate: 8.769e20,
+      timestamp: 1785144795, bits: 386022100, nonce: 3692993034,
+      difficulty: 126231507121868.2, networkHashrate: 8.769e20,
+      retarget: null as any, price: { GBP: 48884, USD: 65086 },
     };
+    let block: any = FALLBACK;
 
-    let block: typeof FALLBACK = FALLBACK;
-    let header = new Uint8Array(80);
-    let difficulty = 4;
-    let nonce = 0;
-    let hashes = 0;
-    let blocks = 0;
-    let rate = 0;
-    let lastRate = 0; // kept after stopping so the scale note stays on screen
+    let workers: Worker[] = [];
     let mining = false;
+    let hashes = 0;
+    let hits = 0;
+    let rate = 0;
+    let lastRate = 0;
+    let winStart = 0;
+    let winHashes = 0;
+    let difficulty = 5;
 
-    const num = (n: number) => n.toLocaleString('en-GB');
+    const cores = () => Number(($('m-cores') as HTMLInputElement).value);
     const effort = () => Number(($('m-effort') as HTMLInputElement).value) / 100;
     const target = () => '0'.repeat(difficulty);
 
-    // ---- header assembly (little-endian ints, hashes in internal order) ----
-    const hexToBytesReversed = (hex: string) => {
-      const out = new Uint8Array(hex.length / 2);
-      for (let i = 0; i < out.length; i++) {
-        out[out.length - 1 - i] = parseInt(hex.substr(i * 2, 2), 16);
-      }
-      return out;
-    };
-    const writeU32LE = (buf: Uint8Array, off: number, v: number) => {
-      buf[off] = v & 0xff;
-      buf[off + 1] = (v >>> 8) & 0xff;
-      buf[off + 2] = (v >>> 16) & 0xff;
-      buf[off + 3] = (v >>> 24) & 0xff;
+    // ---- header assembly -------------------------------------------------
+    const revBytes = (hex: string) => {
+      const o = new Uint8Array(hex.length / 2);
+      for (let i = 0; i < o.length; i++) o[o.length - 1 - i] = parseInt(hex.substr(i * 2, 2), 16);
+      return o;
     };
     const buildHeader = () => {
       const h = new Uint8Array(80);
-      writeU32LE(h, 0, block.version);
-      h.set(hexToBytesReversed(block.previousblockhash), 4);
-      h.set(hexToBytesReversed(block.merkle_root), 36);
-      writeU32LE(h, 68, block.timestamp);
-      writeU32LE(h, 72, block.bits);
-      writeU32LE(h, 76, 0);
-      header = h;
+      const dv = new DataView(h.buffer);
+      dv.setUint32(0, block.version, true);
+      h.set(revBytes(block.previousblockhash), 4);
+      h.set(revBytes(block.merkle_root), 36);
+      dv.setUint32(68, block.timestamp, true);
+      dv.setUint32(72, block.bits, true);
+      return h;
     };
-
-    // Bitcoin hashes the header twice, then reads the result back to front.
-    const hashAt = async (n: number) => {
-      writeU32LE(header, 76, n >>> 0);
-      const once = await crypto.subtle.digest('SHA-256', header);
-      const twice = new Uint8Array(await crypto.subtle.digest('SHA-256', once));
-      let out = '';
-      for (let i = twice.length - 1; i >= 0; i--) out += twice[i].toString(16).padStart(2, '0');
-      return out;
-    };
-
-    // Compact "bits" unpacks into the 256-bit target a real block must beat.
     const realTargetHex = () => {
       const exp = block.bits >>> 24;
       const mant = BigInt(block.bits & 0x00ffffff);
-      const t = mant * (1n << BigInt(8 * (exp - 3)));
-      return t.toString(16).padStart(64, '0');
+      return (mant * (1n << BigInt(8 * (exp - 3)))).toString(16).padStart(64, '0');
     };
 
-    const paintHash = (h: string) => {
-      const lead = (h.match(/^0*/) || [''])[0];
-      $('m-hash').innerHTML = lead ? `<span class="zeros">${lead}</span>${h.slice(lead.length)}` : h;
-    };
     const setStatus = (t: string, on = false) => {
       $('m-status').textContent = t;
       $('m-status').setAttribute('data-on', String(on));
     };
+    const paintHash = (h: string) => {
+      const lead = (h.match(/^0*/) || [''])[0];
+      $('m-hash').innerHTML = lead ? `<span class="zeros">${lead}</span>${h.slice(lead.length)}` : h;
+    };
     const short = (h: string) => `${h.slice(0, 8)}…${h.slice(-6)}`;
 
-    const paintStats = () => {
-      $('m-height').textContent = `#${num(block.height)}`;
-      $('m-net').textContent = block.networkHashrate
-        ? `${(block.networkHashrate / 1e18).toFixed(0)} EH/s`
-        : 'unknown';
-      $('m-rate').textContent = `${num(rate)} H/s`;
-      $('m-blocks').textContent = String(blocks);
-      $('m-version').textContent = `0x${block.version.toString(16)}`;
-      $('m-prev').textContent = short(block.previousblockhash);
-      $('m-merkle').textContent = short(block.merkle_root);
-      $('m-time').textContent = `${block.timestamp} / 0x${block.bits.toString(16)}`;
-      $('m-nonce').textContent = num(nonce);
-      $('m-target').textContent = target();
-      $('m-odds').textContent = ` (about 1 in ${num(Math.pow(16, difficulty))} hashes)`;
-      $('m-realtarget').textContent = `${realTargetHex().slice(0, 32)}…`;
-
-      // Honest scale: how long the real target would take at this rate.
-      if (lastRate > 0 && block.networkHashrate) {
-        const expected = block.difficulty * Math.pow(2, 32); // hashes for one real block
-        const years = expected / lastRate / (60 * 60 * 24 * 365);
-        $('m-note').textContent =
-          `Real difficulty needs about ${expected.toExponential(1)} hashes for one block. At ${num(lastRate)} H/s that is roughly ${years.toExponential(1)} years, versus about ten minutes for the whole network at ${(block.networkHashrate / 1e18).toFixed(0)} EH/s. That gap is why nobody mines Bitcoin in a browser.`;
-      } else {
-        $('m-note').textContent =
-          'The header below is the real one from the latest block. Press Start to hash it.';
+    // ---- probability model: geometric, drawn as its continuous limit ------
+    const drawProbability = () => {
+      const p = Math.pow(16, -difficulty);
+      const r = lastRate || 0;
+      if (!r) {
+        $('m-prob').textContent = 'Start mining to model your own rate.';
+        $('m-curve').setAttribute('d', '');
+        $('m-median').setAttribute('x1', '-10');
+        $('m-median').setAttribute('x2', '-10');
+        $('m-median-lbl').textContent = '';
+        $('m-xmax').textContent = '';
+        return;
       }
-    };
-
-    const addChip = (h: string, n: number) => {
-      const li = document.createElement('li');
-      li.innerHTML = `<b>${target()}</b> nonce ${num(n)}`;
-      const chain = $('m-chain');
-      chain.prepend(li);
-      while (chain.children.length > 8) chain.lastElementChild?.remove();
-    };
-
-    const won = (h: string, n: number) => {
-      blocks++;
-      addChip(h, n);
-      const blockEl = root.querySelector('.miner__block') as HTMLElement;
-      blockEl.classList.add('is-won');
-      window.setTimeout(() => blockEl.classList.remove('is-won'), 1200);
-      setStatus(`Practice target met at nonce ${num(n)}`, mining);
-      paintStats();
-    };
-
-    const tryOne = async () => {
-      nonce = (nonce + 1) >>> 0;
-      const h = await hashAt(nonce);
-      hashes++;
-      paintHash(h);
-      if (h.startsWith(target())) won(h, nonce);
-      paintStats();
-    };
-
-    const loop = async () => {
-      if (!mining) return;
-      const CHUNK = 150;
-      const t0 = performance.now();
-      let last = '';
-      for (let i = 0; i < CHUNK; i++) {
-        nonce = (nonce + 1) >>> 0;
-        last = await hashAt(nonce);
-        hashes++;
-        if (last.startsWith(target())) {
-          paintHash(last);
-          won(last, nonce);
-          window.setTimeout(() => { if (mining) loop(); }, 900);
-          return;
-        }
+      const lambda = p * r;                    // hits per second
+      const median = Math.log(2) / lambda;     // 50% chance by here
+      const xmax = median * 4;
+      let d = '';
+      for (let i = 0; i <= 80; i++) {
+        const t = (xmax * i) / 80;
+        const prob = 1 - Math.exp(-lambda * t);
+        const x = 34 + (i / 80) * 276;
+        const y = 104 - prob * 94;
+        d += (i ? ' L' : 'M') + `${x.toFixed(1)} ${y.toFixed(1)}`;
       }
-      const dt = performance.now() - t0;
-      const e = effort();
-      const idle = e >= 1 ? 0 : Math.min(500, Math.round((dt * (1 - e)) / e));
-      if (dt + idle > 0) { rate = Math.round(CHUNK / ((dt + idle) / 1000)); lastRate = rate; }
-      paintHash(last);
-      paintStats();
-      window.setTimeout(loop, idle);
+      $('m-curve').setAttribute('d', d);
+      const mx = 34 + (median / xmax) * 276;
+      $('m-median').setAttribute('x1', String(mx));
+      $('m-median').setAttribute('x2', String(mx));
+      const fmtT = (s: number) => (s < 90 ? `${s.toFixed(1)}s` : `${(s / 60).toFixed(1)}m`);
+      $('m-median-lbl').setAttribute('x', String(mx));
+      $('m-median-lbl').textContent = `median ${fmtT(median)}`;
+      $('m-xmax').textContent = fmtT(xmax);
+      $('m-prob').textContent =
+        `p = 16^-${difficulty} = ${p.toExponential(2)} per hash. At ${num(r)} H/s that is ${lambda.toFixed(3)} hits/s, so the expected wait is ${fmtT(1 / lambda)} and the median is ${fmtT(median)}. The real target would take ${( (block.difficulty * 4294967296) / r / 3.15e7 ).toExponential(1)} years.`;
+    };
+
+    // ---- difficulty retarget ---------------------------------------------
+    const drawRetarget = () => {
+      const rt = block.retarget;
+      if (!rt) { $('m-retarget').textContent = 'Retarget data unavailable.'; return; }
+      ($('m-epoch') as HTMLElement).style.width = `${rt.progressPercent.toFixed(1)}%`;
+      const dir = rt.difficultyChange >= 0 ? 'up' : 'down';
+      $('m-retarget').textContent =
+        `${rt.progressPercent.toFixed(1)}% through the epoch, ${num(rt.remainingBlocks)} blocks to height ${num(rt.nextRetargetHeight)}. Blocks are averaging ${(rt.timeAvg / 60000).toFixed(1)} minutes against a 10 minute goal, so difficulty is projected ${dir} ${Math.abs(rt.difficultyChange).toFixed(2)}%. Last retarget moved it ${rt.previousRetarget.toFixed(2)}%.`;
+    };
+
+    // ---- expected value ---------------------------------------------------
+    const evNum = (id: string) => Number(($(id) as HTMLInputElement).value) || 0;
+    const drawEV = () => {
+      const gbp = block.price?.GBP ?? 0;
+      const netH = block.networkHashrate ?? 0;
+      if (!gbp || !netH) { $('ev-out').innerHTML = ''; return; }
+      const yourH = evNum('ev-hash') * 1e12;
+      const share = yourH / netH;
+      const btcDay = share * 144 * 3.125 * (1 - evNum('ev-fee') / 100);
+      const revDay = btcDay * gbp;
+      const costDay = (evNum('ev-watt') / 1000) * 24 * evNum('ev-tariff');
+      const profit = revDay - costDay;
+      const capex = evNum('ev-capex');
+      const payback = profit > 0 ? capex / profit : Infinity;
+      // Break-even tariff: the price at which revenue exactly covers power.
+      const beTariff = evNum('ev-watt') > 0 ? revDay / ((evNum('ev-watt') / 1000) * 24) : 0;
+      // Four-year comparison against simply holding the same capital in BTC,
+      // holding price and difficulty flat so the arithmetic stays honest.
+      const fourYr = profit * 365 * 4 - capex;
+      const btcBought = capex / gbp;
+
+      $('ev-out').innerHTML =
+        `<dt>Revenue</dt><dd>${btcDay.toFixed(8)} BTC/day (${money(revDay)})</dd>` +
+        `<dt>Power cost</dt><dd>${money(costDay)}/day</dd>` +
+        `<dt>Profit</dt><dd class="${profit >= 0 ? 'pos' : 'neg'}">${money(profit)}/day</dd>` +
+        `<dt>Break-even tariff</dt><dd>${money(beTariff)}/kWh</dd>` +
+        `<dt>Payback</dt><dd>${Number.isFinite(payback) ? `${payback.toFixed(0)} days` : 'never at this tariff'}</dd>` +
+        `<dt>Net over 4 years</dt><dd class="${fourYr >= 0 ? 'pos' : 'neg'}">${money(fourYr)}</dd>`;
+      $('ev-note').textContent =
+        `Held flat, ${money(capex)} of hardware nets ${money(fourYr)} over a halving cycle, against ${btcBought.toFixed(4)} BTC if the same money simply bought coins. Difficulty and price are assumed constant, which flatters mining: difficulty has historically risen, cutting the share a fixed rig earns.`;
+    };
+
+    // ---- worker pool ------------------------------------------------------
+    const stopWorkers = () => {
+      workers.forEach((w) => { w.postMessage({ type: 'stop' }); w.terminate(); });
+      workers = [];
+    };
+
+    const startWorkers = () => {
+      stopWorkers();
+      const header = buildHeader();
+      const n = cores();
+      winStart = performance.now();
+      winHashes = 0;
+      for (let i = 0; i < n; i++) {
+        const w = new Worker(new URL('../../workers/btc-miner.worker.ts', import.meta.url), {
+          type: 'module',
+        });
+        w.onmessage = (e: MessageEvent) => {
+          const m = e.data;
+          hashes += m.hashes;
+          winHashes += m.hashes;
+          const elapsed = (performance.now() - winStart) / 1000;
+          if (elapsed > 0.5) {
+            rate = Math.round(winHashes / elapsed);
+            lastRate = rate;
+            winStart = performance.now();
+            winHashes = 0;
+          }
+          $('m-nonce').textContent = num(m.nonce);
+          if (m.hash) paintHash(m.hash);
+          $('m-rate').textContent = `${num(rate)} H/s`;
+          if (m.type === 'found') {
+            hits++;
+            const li = document.createElement('li');
+            li.innerHTML = `<b>${target()}</b> nonce ${num(m.foundNonce)}`;
+            $('m-chain').prepend(li);
+            while ($('m-chain').children.length > 8) $('m-chain').lastElementChild?.remove();
+            const bEl = root.querySelector('.miner__block') as HTMLElement;
+            bEl.classList.add('is-won');
+            window.setTimeout(() => bEl.classList.remove('is-won'), 1200);
+            setStatus(`Hit ${hits}: nonce ${num(m.foundNonce)}`, true);
+            // Restart that worker further along the nonce space.
+            w.postMessage({
+              type: 'start', header: buildHeader().buffer, zeros: difficulty,
+              startNonce: (m.foundNonce + 1000) >>> 0, stride: n, effort: effort(),
+            });
+          }
+          drawProbability();
+        };
+        w.postMessage({
+          type: 'start',
+          header: header.slice().buffer,
+          zeros: difficulty,
+          startNonce: i,
+          stride: n,
+          effort: effort(),
+        });
+        workers.push(w);
+      }
     };
 
     const setMining = (on: boolean, why?: string) => {
       mining = on;
       ($('m-auto') as HTMLButtonElement).textContent = on ? 'Stop mining' : 'Start mining';
-      ($('m-once') as HTMLButtonElement).disabled = on;
-      ($('m-real') as HTMLButtonElement).disabled = on;
+      ($('m-cores') as HTMLInputElement).disabled = on;
+      ($('m-diff') as HTMLSelectElement).disabled = on;
       if (on) {
-        setStatus(`Mining at ${Math.round(effort() * 100)}% effort`, true);
-        loop();
+        startWorkers();
+        setStatus(`Mining on ${cores()} core${cores() > 1 ? 's' : ''} at ${Math.round(effort() * 100)}%`, true);
       } else {
+        stopWorkers();
         rate = 0;
+        $('m-rate').textContent = '0 H/s';
         setStatus(why || 'Stopped');
-        paintStats();
       }
     };
 
-    // ---- consent gate: nothing above runs until this is accepted -----------
-    const CONSENT_KEY = 'er5-miner-consent';
+    const paintBlock = () => {
+      $('m-height').textContent = `#${num(block.height)}`;
+      $('m-net').textContent = block.networkHashrate
+        ? `${(block.networkHashrate / 1e18).toFixed(0)} EH/s`
+        : 'unknown';
+      $('m-version').textContent = `0x${block.version.toString(16)}`;
+      $('m-prev').textContent = short(block.previousblockhash);
+      $('m-merkle').textContent = short(block.merkle_root);
+      $('m-time').textContent = `${block.timestamp} / 0x${block.bits.toString(16)}`;
+      $('m-target').textContent = target();
+      $('m-odds').textContent = ` (1 in ${num(Math.pow(16, difficulty))} hashes)`;
+      $('m-realtarget').textContent = `${realTargetHex().slice(0, 32)}…`;
+      drawRetarget();
+      drawEV();
+      drawProbability();
+    };
+
+    // ---- live block feed over WebSocket -----------------------------------
+    const connectFeed = () => {
+      try {
+        const ws = new WebSocket('wss://mempool.space/api/v1/ws');
+        ws.onopen = () => {
+          $('m-ws').textContent = 'live';
+          $('m-ws').classList.add('miner__v--live');
+          ws.send(JSON.stringify({ action: 'want', data: ['blocks', 'stats'] }));
+        };
+        ws.onmessage = (ev) => {
+          try {
+            const d = JSON.parse(ev.data);
+            const nb = d.block ?? (Array.isArray(d.blocks) ? d.blocks[d.blocks.length - 1] : null);
+            if (nb?.id && nb.height > block.height) {
+              block = { ...block, ...nb };
+              paintBlock();
+              setStatus(`New block #${num(nb.height)} arrived, now hashing that header`, mining);
+              if (mining) startWorkers();
+            }
+            if (d.mempoolInfo || d.da) { /* stats frames, ignored */ }
+          } catch {}
+        };
+        ws.onclose = () => {
+          $('m-ws').textContent = 'offline';
+          $('m-ws').classList.remove('miner__v--live');
+        };
+        ws.onerror = () => {
+          $('m-ws').textContent = 'offline';
+          $('m-ws').classList.remove('miner__v--live');
+        };
+      } catch {
+        $('m-ws').textContent = 'unavailable';
+      }
+    };
+
     const loadBlock = async () => {
       try {
         const res = await fetch('/api/bitcoin.json', { cache: 'no-store' });
@@ -474,56 +600,69 @@
           const j = await res.json();
           if (j && typeof j.version === 'number') block = j;
         }
-      } catch {
-        /* keep the verified fallback */
-      }
-      buildHeader();
-      paintStats();
+      } catch {}
+      paintBlock();
       setStatus('Idle');
+      connectFeed();
     };
+
+    // ---- consent gate ------------------------------------------------------
+    const CONSENT_KEY = 'er5-miner-consent';
     const reveal = () => {
       $('m-consent').hidden = true;
       $('m-game').hidden = false;
+      const hw = (navigator as any).hardwareConcurrency || 4;
+      const el = $('m-cores') as HTMLInputElement;
+      el.max = String(Math.max(1, Math.min(8, hw)));
+      el.value = String(Math.max(1, Math.min(2, hw)));
+      ($('m-cores-out') as HTMLOutputElement).value = el.value;
       void loadBlock();
     };
-    try {
-      if (localStorage.getItem(CONSENT_KEY) === 'yes') reveal();
-    } catch {}
+    try { if (localStorage.getItem(CONSENT_KEY) === 'yes') reveal(); } catch {}
     $('m-agree').addEventListener('click', () => {
       try { localStorage.setItem(CONSENT_KEY, 'yes'); } catch {}
       reveal();
       ($('m-auto') as HTMLButtonElement).focus();
     });
 
-    $('m-once').addEventListener('click', () => { void tryOne(); });
     $('m-auto').addEventListener('click', () => setMining(!mining));
-    $('m-real').addEventListener('click', async () => {
-      // Proof that this is the genuine article: the real nonce reproduces the
-      // real block hash, which really does beat the real network target.
-      nonce = block.nonce;
-      const h = await hashAt(nonce);
-      hashes++;
-      paintHash(h);
-      const beats = BigInt('0x' + h) <= BigInt('0x' + realTargetHex());
-      setStatus(beats ? `That is block #${num(block.height)}, and it beats the real target` : 'Hash computed');
-      paintStats();
-    });
     $('m-reset').addEventListener('click', () => {
       setMining(false, 'Reset');
-      nonce = 0; hashes = 0; blocks = 0; rate = 0;
+      hashes = 0; hits = 0; rate = 0; lastRate = 0;
       $('m-chain').innerHTML = '';
-      $('m-hash').textContent = 'press mine to begin';
-      paintStats();
+      $('m-hash').textContent = 'press start to begin';
+      $('m-nonce').textContent = '0';
+      drawProbability();
     });
-    $('m-diff').addEventListener('change', (e) => {
-      difficulty = Number((e.target as HTMLSelectElement).value);
-      paintStats();
+    $('m-real').addEventListener('click', async () => {
+      // Proof this is genuine: the real nonce reproduces the real block hash.
+      const h = buildHeader();
+      new DataView(h.buffer).setUint32(76, block.nonce >>> 0, true);
+      const one = await crypto.subtle.digest('SHA-256', h);
+      const two = new Uint8Array(await crypto.subtle.digest('SHA-256', one));
+      let hex = '';
+      for (let i = two.length - 1; i >= 0; i--) hex += two[i].toString(16).padStart(2, '0');
+      paintHash(hex);
+      $('m-nonce').textContent = num(block.nonce);
+      const beats = BigInt('0x' + hex) <= BigInt('0x' + realTargetHex());
+      setStatus(beats ? `That is block #${num(block.height)}, and it beats the real target` : 'Hash computed');
+    });
+    $('m-cores').addEventListener('input', () => {
+      ($('m-cores-out') as HTMLOutputElement).value = String(cores());
     });
     $('m-effort').addEventListener('input', () => {
       const pct = Math.round(effort() * 100);
       ($('m-effort-out') as HTMLOutputElement).value = `${pct}%`;
-      if (mining) setStatus(`Mining at ${pct}% effort`, true);
+      workers.forEach((w) => w.postMessage({ type: 'effort', effort: effort() }));
+      if (mining) setStatus(`Mining on ${cores()} core${cores() > 1 ? 's' : ''} at ${pct}%`, true);
     });
+    $('m-diff').addEventListener('change', (e) => {
+      difficulty = Number((e.target as HTMLSelectElement).value);
+      paintBlock();
+    });
+    ['ev-hash', 'ev-watt', 'ev-tariff', 'ev-fee', 'ev-capex'].forEach((id) =>
+      $(id).addEventListener('input', drawEV)
+    );
 
     document.addEventListener('visibilitychange', () => {
       if (document.hidden && mining) setMining(false, 'Paused, you left the tab');

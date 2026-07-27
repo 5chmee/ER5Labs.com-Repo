@@ -30,12 +30,23 @@ const Demo = DEMOS[experiment.slug];
       back={{ href: '/playground', label: 'Playground' }}
     />
     <div class="container section--tight">
+      {experiment.writeup && (
+        <a class="writeup link-underline" href={experiment.writeup}>
+          Read how it works &rarr;
+        </a>
+      )}
       {Demo ? <Demo /> : <p class="missing">This experiment has not been wired up yet.</p>}
     </div>
   </main>
 </Base>
 
 <style>
+  .writeup {
+    display: inline-block;
+    margin-bottom: 1.5rem;
+    font-family: var(--font-mono);
+    font-size: var(--step--1);
+  }
   .missing {
     padding: 2.5rem 1.5rem;
     text-align: center;

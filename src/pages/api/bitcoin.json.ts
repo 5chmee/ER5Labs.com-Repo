@@ -9,16 +9,23 @@ export const prerender = false;
 export const GET: APIRoute = async () => {
   try {
     const headers = { 'User-Agent': 'Mozilla/5.0 (compatible; ER5Labs/1.0)' };
-    const [blocksRes, rateRes] = await Promise.all([
-      fetch('https://mempool.space/api/v1/blocks', { headers, signal: AbortSignal.timeout(6000) }),
-      fetch('https://mempool.space/api/v1/mining/hashrate/3d', { headers, signal: AbortSignal.timeout(6000) }),
+    const grab = (u: string) =>
+      fetch(u, { headers, signal: AbortSignal.timeout(6000) }).catch(() => null);
+
+    const [blocksRes, rateRes, adjRes, priceRes] = await Promise.all([
+      grab('https://mempool.space/api/v1/blocks'),
+      grab('https://mempool.space/api/v1/mining/hashrate/3d'),
+      grab('https://mempool.space/api/v1/difficulty-adjustment'),
+      grab('https://mempool.space/api/v1/prices'),
     ]);
-    if (!blocksRes.ok) return new Response('{"error":"upstream"}', { status: 502 });
+    if (!blocksRes?.ok) return new Response('{"error":"upstream"}', { status: 502 });
 
     const block = (await blocksRes.json())?.[0];
     if (!block) return new Response('{"error":"no block"}', { status: 502 });
 
-    const rate = rateRes.ok ? await rateRes.json() : null;
+    const rate = rateRes?.ok ? await rateRes.json() : null;
+    const adj = adjRes?.ok ? await adjRes.json() : null;
+    const price = priceRes?.ok ? await priceRes.json() : null;
 
     return new Response(
       JSON.stringify({
@@ -32,6 +39,18 @@ export const GET: APIRoute = async () => {
         nonce: block.nonce,
         difficulty: block.difficulty,
         networkHashrate: rate?.currentHashrate ?? null,
+        // Retarget maths: where we are in the current 2016-block epoch.
+        retarget: adj
+          ? {
+              progressPercent: adj.progressPercent,
+              difficultyChange: adj.difficultyChange,
+              remainingBlocks: adj.remainingBlocks,
+              nextRetargetHeight: adj.nextRetargetHeight,
+              timeAvg: adj.timeAvg,
+              previousRetarget: adj.previousRetarget,
+            }
+          : null,
+        price: price ? { GBP: price.GBP, USD: price.USD } : null,
       }),
       {
         status: 200,
