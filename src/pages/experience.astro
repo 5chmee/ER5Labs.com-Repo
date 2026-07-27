@@ -1,8 +1,16 @@
 ---
 import Base from '../layouts/Base.astro';
 import PageHeader from '../components/PageHeader.astro';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { experience } from '../data/experience';
 import { resume, noteFor } from '../data/site';
+
+// Only offer the résumé if the file is actually there, so the link can never
+// 404 on the live site. Drop the PDF at public/resume.pdf and the button
+// appears by itself on the next build. Resolved from the project root, since
+// import.meta.url points at the bundled module rather than this source file.
+const resumeReady = existsSync(join(process.cwd(), 'public', resume.url.replace(/^\/+/, '')));
 ---
 <Base title="Experience · ER5Labs" description="Emad Rafiq's background and résumé.">
   <main id="main">
@@ -11,12 +19,22 @@ import { resume, noteFor } from '../data/site';
       lead={noteFor('/experience')}
     />
     <div class="container section--tight">
-      <div class="resume">
-        <p class="resume__line">My current résumé.</p>
-        <a class="resume__link" href={resume.url} target="_blank" rel="noopener noreferrer">
-          {resume.label} <span aria-hidden="true">&#8599;</span>
-        </a>
-      </div>
+      {resumeReady ? (
+        <div class="resume">
+          <p class="resume__line">My current résumé.</p>
+          <a class="resume__link" href={resume.url} target="_blank" rel="noopener noreferrer">
+            {resume.label} <span aria-hidden="true">&#8599;</span>
+          </a>
+        </div>
+      ) : (
+        <div class="resume resume--pending">
+          <p class="resume__line">
+            My résumé is going up here shortly. In the meantime, the projects section covers
+            what I have been building.
+          </p>
+          <a class="resume__alt link-underline" href="/projects">See my projects &rarr;</a>
+        </div>
+      )}
 
       {experience.length > 0 && (
         <ol class="xp">
@@ -65,6 +83,14 @@ import { resume, noteFor } from '../data/site';
     transition: background var(--transition), transform var(--transition);
   }
   .resume__link:hover { background: var(--accent-2); transform: translateY(-2px); }
+
+  /* Shown until public/resume.pdf exists */
+  .resume--pending { border-style: dashed; }
+  .resume__alt {
+    flex-shrink: 0;
+    font-family: var(--font-mono);
+    font-size: var(--step--1);
+  }
 
   .xp { list-style: none; margin: 2.5rem 0 0; padding: 0; }
   .xp__item {
