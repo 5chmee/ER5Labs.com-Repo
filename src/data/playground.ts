@@ -28,9 +28,9 @@ export const experiments: Experiment[] = [
     title: 'Bitcoin mining game',
     tag: 'Latest',
     added: 'July 2026',
-    note: 'Hunt for a nonce whose SHA-256 hash starts with enough zeros, the puzzle real miners race to solve.',
+    note: 'Hash the real header of the latest Bitcoin block, the same double SHA-256 the network runs.',
     intro:
-      'Proof of work, played by hand. Pick a difficulty and hunt for a nonce whose SHA-256 hash starts with enough zeros. The hashing is real, the coins are not: it runs only when you ask it to, at whatever share of your processor you choose.',
+      'Proof of work against a genuine block. The 80-byte header comes live from the Bitcoin network and the hashing is real double SHA-256, so feeding it the real winning nonce reproduces that block\'s actual hash. The payout is the only part that is not real: the true target needs around 10²³ hashes, so you are scored against an easier practice target while the real one sits alongside for scale.',
   },
   {
     slug: 'split-flap-toy',
