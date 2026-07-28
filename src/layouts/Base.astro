@@ -10,6 +10,9 @@ import Lamp from '../components/Lamp.astro';
 import SideNav from '../components/SideNav.astro';
 import DepartureBoard from '../components/DepartureBoard.astro';
 import MarketTicker from '../components/MarketTicker.astro';
+// Privacy-friendly visitor counts. Only reports once deployed on Vercel; it
+// does nothing locally, sets no cookies and collects no personal data.
+import Analytics from '@vercel/analytics/astro';
 import { contact } from '../data/site';
 
 interface Props {
@@ -90,6 +93,7 @@ const linkedinHref = contact.linkedin.startsWith('http') ? contact.linkedin : `h
         </nav>
       </div>
     </footer>
+    <Analytics />
     <script is:inline>
       var y = document.getElementById('yr');
       if (y) y.textContent = new Date().getFullYear();
