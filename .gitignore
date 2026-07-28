@@ -20,10 +20,12 @@ Git-2.55.0.3-64-bit.exe
 # Old vanilla site — preserved locally for reference, out of the repo
 legacy/
 
-# Reference docs — kept locally, excluded from the repo (code only)
-ER5Labs-Build-Guide.docx
-ER5Labs-Build-Guide.pdf
-Bitcoin-Mining-Game-Explained.pdf
+# Reference documents (docs/). The generator and the written source are
+# versioned so the PDFs can be rebuilt anywhere; the generated PDFs and any
+# source material are not, since they are binaries and may describe client work.
+docs/**/*.pdf
+docs/**/*.docx
+docs/_generator/node_modules/
 
 # Editor and agent workspace settings. Local machine config, and launch.json
 # can reference paths to unrelated projects, so it stays out of the repo.

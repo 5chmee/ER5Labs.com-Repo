@@ -1,0 +1,12 @@
+{
+  "name": "er5labs-docs",
+  "private": true,
+  "type": "module",
+  "description": "Generates the reference PDFs in docs/. Kept separate from the site so it never affects the deployed build.",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "dependencies": {
+    "pdfkit": "^0.19.1"
+  }
+}
