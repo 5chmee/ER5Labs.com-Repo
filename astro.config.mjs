@@ -2,6 +2,8 @@ import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 import vercel from '@astrojs/vercel';
 
+import cloudflare from "@astrojs/cloudflare";
+
 // https://astro.build/config
 // Every page is still prerendered to static HTML. The only on-demand route is
 // /api/markets.json (see src/pages/api/), which proxies live market data — the
@@ -9,5 +11,5 @@ import vercel from '@astrojs/vercel';
 export default defineConfig({
   site: 'https://er5labs.com',
   integrations: [sitemap()],
-  adapter: vercel(),
+  adapter: cloudflare(),
 });
