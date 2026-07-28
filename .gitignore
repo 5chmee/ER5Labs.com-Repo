@@ -20,9 +20,10 @@ Git-2.55.0.3-64-bit.exe
 # Old vanilla site — preserved locally for reference, out of the repo
 legacy/
 
-# Build guide docs — kept locally, excluded from the repo (code only)
+# Reference docs — kept locally, excluded from the repo (code only)
 ER5Labs-Build-Guide.docx
 ER5Labs-Build-Guide.pdf
+Bitcoin-Mining-Game-Explained.pdf
 
 # Editor and agent workspace settings. Local machine config, and launch.json
 # can reference paths to unrelated projects, so it stays out of the repo.
