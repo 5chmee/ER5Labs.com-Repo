@@ -24,8 +24,10 @@ legacy/
 ER5Labs-Build-Guide.docx
 ER5Labs-Build-Guide.pdf
 
-# Editor workspace settings
+# Editor and agent workspace settings. Local machine config, and launch.json
+# can reference paths to unrelated projects, so it stays out of the repo.
 .vscode/
+.claude/
 
 # OS / editor cruft
 .DS_Store
