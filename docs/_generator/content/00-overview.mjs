@@ -102,7 +102,17 @@ export default {
 
     d.h2('The design constraint that decides everything');
     d.p('A favicon is displayed at sixteen pixels. That is a grid of 256 pixels in total, less than a full stop on this page. Detail does not survive it. Whatever reads at sixteen pixels is a bold silhouette with strong contrast against its background, which is why well known icons are almost always one shape or one character on a filled tile.');
-    d.p('The mark is a stacked monogram: a small, widely spaced ER above a large 5, in cream on the terracotta tile. The 5 carries the icon, because a single numeral is the one element that stays legible at sixteen pixels.');
+    d.p('The mark is a stacked monogram: a small, widely spaced ER curving gently over a large 5, in departure board amber on a near-black tile. The colours are the board’s own, so the icon and the front page read as the same object. The 5 carries the icon, because a single numeral is the one element that stays legible at sixteen pixels.');
+
+    d.h2('Setting type on a curve');
+    d.p('The ER is not a straight line that has been bent. Each letter is placed on a circle whose centre sits below the text, and rotated to match the tangent at its own position, so the pair arches over the numeral and descends on both sides of it. Twenty degrees is a light touch, but it is the difference between a lockup that looks assembled and one that looks drawn.');
+    d.p('The radius is not chosen directly. It follows from the width the letters have to cover and the angle they have to cover it in, since the arc length of a circle is its radius multiplied by the angle. So the design is expressed as a number of degrees, which is what somebody adjusting it actually cares about, and the geometry is derived.');
+    d.code([
+      'const arc    = (degrees * Math.PI) / 180;',
+      'const radius = inkedWidth / arc;          // arc length = r x angle',
+      'const angle  = (distanceAlong / radius);  // per letter',
+    ]);
+    d.small('Two bugs surfaced on the first attempt: every letter was drawn at its own origin, so a straight line stacked them on top of one another, and the arc used each letter’s position in the line where it needed its position relative to itself. Both were obvious once the result was rendered and looked at, and invisible in the code.');
     d.callout('The font trap in SVG icons, and how it was avoided',
       'An SVG containing a text element is rendered using a font from the viewer’s machine, not yours. A carefully set monogram silently becomes whatever they happen to have installed. So the letters are not text: the outlines are read out of the site’s own typeface at build time and written into the file as paths. The letterforms match the headings exactly, and nothing depends on the visitor.');
 
@@ -111,9 +121,9 @@ export default {
     d.code([
       '// scripts/build-icons.mjs',
       'const design = {',
-      '  tile: "#bd5b34",  mark: "#f7f2e8",  radius: 6,',
-      '  erHeight: 7.0, erTrack: 0.30,',
-      '  fiveHeight: 15.4, gap: 1.0,',
+      '  tile: "#16130d",  mark: "#e6a13a",  radius: 7,',
+      '  erHeight: 5.8, erTrack: 0.22, erArc: 20,',
+      '  fiveHeight: 15.2, gap: 2.1,',
       '};',
     ]);
     d.p('Running npm run icons regenerates every file from those numbers. Adjusting the design is a changed value rather than five images redrawn, and they cannot drift apart.');
@@ -128,8 +138,8 @@ export default {
       '',
       '#  full cream    +  partial    .  tile',
     ]);
-    d.p('The test also settled something no adjustment could fix. At sixteen pixels the ER is roughly four pixels tall, which is below the size at which letterforms resolve at all, so it will never be read as letters there. It becomes legible at thirty-two pixels, which is what a modern high-density screen actually uses for a tab, and fully clear everywhere larger.');
-    d.p('That is a reasonable trade rather than a flaw. At the smallest size the icon still reads as a distinctive cream numeral on terracotta, which is enough to find in a row of tabs, and the full monogram appears everywhere with room for it.');
+    d.p('The test also settled something no adjustment could fix. At sixteen pixels the ER is under three pixels tall, which is below the size at which letterforms resolve at all, so it will never be read as letters there. Curving it costs a little more, since a rotated stroke lands across pixel boundaries rather than along them. It becomes legible at thirty-two pixels, which is what a modern high-density screen actually uses for a tab, and fully clear everywhere larger.');
+    d.p('That is a deliberate trade rather than a flaw. At the smallest size the icon still reads as a distinctive amber numeral on near-black, which is enough to find in a row of tabs, and the full monogram appears everywhere with room for it.');
     d.callout('Why this is the interesting part',
       'The habit generalises well beyond icons. Nearly every real problem found while building this site was found by measuring rather than assuming: the hash rate that justified writing SHA-256 by hand, where clicks were actually landing when the navigation swallowed them, the text coordinates that exposed clipped paragraphs in these documents.');
     d.p('The .ico is assembled by hand, because no ordinary image library writes that format. It is a six byte header, a sixteen byte directory entry per image giving its size and position, then the image data itself. Modern .ico files hold PNGs rather than raw bitmaps, which every browser since Internet Explorer 11 reads.');
