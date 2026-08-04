@@ -1,0 +1,14 @@
+{
+  "name": "ER5Labs",
+  "short_name": "ER5Labs",
+  "description": "The work, writing and experiments of Emad Rafiq.",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#bd5b34",
+  "background_color": "#f5f3ee",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
