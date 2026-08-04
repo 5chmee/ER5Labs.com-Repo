@@ -30,7 +30,7 @@ code from this project. Read the three parts in order.
 
 | Document | Pages | Covers |
 | --- | --- | --- |
-| `00-Overview/ER5Labs-Site-Overview.pdf` | 6 | The whole site: why Astro, how the folders work, the design system, performance, deployment |
+| `00-Overview/ER5Labs-Site-Overview.pdf` | 9 | The whole site: why Astro, how the folders work, the design system, the icon set, performance, deployment |
 | `Playground/Bitcoin-Mining-Game.pdf` | 9 | Proof of work, the statistics, the profitability model, Web Workers, hand-written SHA-256 |
 | `Playground/Split-Flap-Toy.pdf` | 4 | The departure board mechanism, and the animation performance problem behind it |
 

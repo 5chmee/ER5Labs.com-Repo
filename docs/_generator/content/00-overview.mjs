@@ -40,7 +40,8 @@ export default {
       ['src/styles/global.css', 'The design system: colours, type scale, spacing, all as named variables.'],
       ['src/pages/api/', 'The two server functions, for market prices and Bitcoin data.'],
       ['src/workers/', 'Background thread code, currently the mining engine.'],
-      ['public/', 'Files served exactly as they are: the favicon, the social preview image, robots.txt.'],
+      ['public/', 'Files served exactly as they are: the icon set, the social preview image, robots.txt.'],
+      ['scripts/', 'Small build tools run by hand rather than on every deploy, currently the icon generator.'],
     ]);
 
     d.callout('The one idea worth taking away',
@@ -85,7 +86,54 @@ export default {
     ]);
     d.callout('The measured result', 'About 16 KB of JavaScript in total, pages between 17 and 38 KB, and fonts downloaded only in the character sets a visitor actually needs.');
 
-    d.h1('5.  Deployment');
+    d.pageBreak();
+    d.h1('5.  The icon set');
+    d.p('The small square beside a page title in a browser tab is called a favicon. It is the only part of the site a visitor sees while looking at something else, so it does more work than its size suggests.');
+
+    d.h2('Why there is more than one file');
+    d.p('There is no single format every platform accepts. Browsers and operating systems each ask for something different, so a site declares several and each client takes the first it understands.');
+    d.kv([
+      ['favicon.svg', 'Chrome, Firefox, Safari and Edge. Described mathematically, so it is sharp at any zoom level and weighs a few hundred bytes.'],
+      ['favicon.ico', 'Older clients, and Google’s search crawler, which still requests this name specifically. It is a container holding 16, 32 and 48 pixel versions.'],
+      ['apple-touch-icon.png', '180 pixels, for an iOS home screen. iOS applies its own rounded mask and supplies no background of its own, so this version has square corners and is flattened onto a solid colour.'],
+      ['icon-192.png, icon-512.png', 'Android home screens, listed in the manifest.'],
+      ['site.webmanifest', 'A small file naming the site, its theme colour and its icons, used when somebody installs the site to a home screen.'],
+    ]);
+
+    d.h2('The design constraint that decides everything');
+    d.p('A favicon is displayed at sixteen pixels. That is a grid of 256 pixels in total, less than a full stop on this page. Detail does not survive it. Whatever reads at sixteen pixels is a bold silhouette with strong contrast against its background, which is why well known icons are almost always one shape or one character on a filled tile.');
+    d.p('The mark here is a split-flap tile: the site accent as the background, with three rounded bars separated by thin gaps, referencing the departure board on the front page. It was chosen over a lettered monogram for two reasons. It survives sixteen pixels, and it carries no font dependency.');
+    d.callout('The font trap in SVG icons',
+      'An SVG containing a text element is rendered using a font on the viewer’s machine, not yours. If they do not have it, a carefully set monogram silently renders in whatever the default happens to be. A mark made of shapes always looks the way it was drawn.');
+
+    d.h2('Generated, not drawn');
+    d.p('Keeping five images in agreement by hand is the same duplication problem the rest of the site avoids, so the icons are produced from one small configuration instead.');
+    d.code([
+      '// scripts/build-icons.mjs',
+      'const design = {',
+      '  tile: "#bd5b34",  mark: "#f7f2e8",',
+      '  radius: 6, scale: 73, seam: 1, rows: 3,',
+      '};',
+    ]);
+    d.p('Running npm run icons regenerates every file from those numbers. Adjusting the design is a changed value rather than five images redrawn, and they cannot drift apart.');
+
+    d.h2('Checking it rather than trusting it');
+    d.p('A favicon looks convincing on a design canvas at two hundred pixels and can be unreadable at sixteen. Rather than judging by eye, the icon was rendered at sixteen pixels and the pixels down its centre were read back and printed as characters, one per row.');
+    d.code([
+      'seam 1    ..############..     0 seams survive',
+      'seam 2    ..###??##??###..     2, faint',
+      'seam 2.5  ..###.?##?.###..     2, clean',
+      '',
+      '#  flap    .  tile    ?  blended edge',
+    ]);
+    d.p('The narrowest gap disappears completely at that size: three separate flaps render as one solid block. The test takes seconds, it is repeatable, and it answers a question that opinion cannot.');
+    d.callout('Why this is the interesting part',
+      'The habit generalises well beyond icons. Nearly every real problem found while building this site was found by measuring rather than assuming: the hash rate that justified writing SHA-256 by hand, where clicks were actually landing when the navigation swallowed them, the text coordinates that exposed clipped paragraphs in these documents.');
+    d.p('The .ico is assembled by hand, because no ordinary image library writes that format. It is a six byte header, a sixteen byte directory entry per image giving its size and position, then the image data itself. Modern .ico files hold PNGs rather than raw bitmaps, which every browser since Internet Explorer 11 reads.');
+    d.small('The generated files are committed rather than built during deployment. The image library is a development dependency only, so nothing is added to what a visitor downloads or to the deploy itself.');
+
+    d.pageBreak();
+    d.h1('6.  Deployment');
     d.p('The pipeline has three steps and no manual stage.');
     d.bullets([
       'A change is committed and pushed to GitHub.',
@@ -100,7 +148,7 @@ export default {
     d.p('They exist because a browser cannot fetch those sources directly. A security rule called CORS stops a web page reading data from another site unless that site permits it, and neither does. Fetching server-side sidesteps that, and keeps the caching in one place.');
 
     d.pageBreak();
-    d.h1('6.  Questions to be ready for');
+    d.h1('7.  Questions to be ready for');
     d.qa([
       ['Why Astro rather than React or Next.js?',
        'The site is mostly content, so there is nothing for a client-side framework to manage. Astro renders to plain HTML and ships no runtime by default, which is why the whole site is about 16 KB of JavaScript. Reaching for React would have added weight for no benefit.'],
@@ -114,6 +162,10 @@ export default {
        'Add an entry to a list in src/data/projects.ts. The listing, the detail page and the homepage panel all read from that list, so nothing else needs touching.'],
       ['What did you do to make it fast?',
        'Static output, no framework runtime, self-hosted fonts, animations that only move or fade, off-screen animation paused, and the one genuinely heavy feature moved onto background threads.'],
+      ['Why does a favicon need five files?',
+       'No format is universally supported. Browsers take the SVG, Google’s crawler and older clients ask for the .ico, iOS needs a 180 pixel PNG with square corners because it applies its own mask, and Android reads PNGs listed in a manifest. Each client takes the first format it recognises.'],
+      ['How did you decide what the icon should be?',
+       'By the constraint rather than by taste. It is displayed at sixteen pixels, so it has to be one bold silhouette with strong contrast. That ruled out anything detailed, and it ruled out text in the SVG, since that renders with a font the viewer might not have.'],
       ['How does deployment work?',
        'Push to GitHub, Vercel rebuilds and publishes automatically. DNS at Cloudflare points the domain at Vercel, with the second domain redirecting to the primary.'],
     ]);

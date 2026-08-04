@@ -18,10 +18,10 @@ import { join } from 'node:path';
 const design = {
   tile: '#bd5b34',   // terracotta, the site accent
   mark: '#f7f2e8',   // warm cream, a shade lighter than the page background
-  radius: 7,         // tile corner, on a 32-unit grid
-  scale: 70,         // percent of the tile the mark occupies
-  seam: 2,           // gap between the two flaps
-  rows: 2,           // flaps
+  radius: 6,         // tile corner, on a 32-unit grid
+  scale: 73,         // percent of the tile the mark occupies
+  seam: 1,           // gap between the flaps
+  rows: 3,           // flaps
 };
 
 /* ---- the mark, drawn from those numbers ------------------------------- */
