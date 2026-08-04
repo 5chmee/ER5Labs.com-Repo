@@ -10,7 +10,8 @@
  * icon-192.png, icon-512.png, og-icon.png.
  */
 import sharp from 'sharp';
-import { writeFile, mkdir } from 'node:fs/promises';
+import opentype from 'opentype.js';
+import { writeFile, mkdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 /* ---- the design ------------------------------------------------------- */
@@ -19,29 +20,73 @@ const design = {
   tile: '#bd5b34',   // terracotta, the site accent
   mark: '#f7f2e8',   // warm cream, a shade lighter than the page background
   radius: 6,         // tile corner, on a 32-unit grid
-  scale: 73,         // percent of the tile the mark occupies
-  seam: 1,           // gap between the flaps
-  rows: 3,           // flaps
+
+  /* The tracking on ER is unusually wide and is doing real work. At 16px the
+     two letters are about four pixels tall, which is below the size at which
+     letterforms resolve. Set normally they merge into one smudge; opened up,
+     they at least read as two separate marks. Verified by rendering to 16px
+     and reading the pixels back, not by eye. */
+  erHeight: 7.0,     // cap height of the small ER, in 32-unit grid units
+  erTrack: 0.30,     // extra space between E and R, as a fraction of an em
+  fiveHeight: 15.4,  // cap height of the large 5
+  gap: 1.0,          // space between the ER baseline and the top of the 5
+  optical: 0.35,     // nudge down; a lockup centred by maths sits visually high
 };
+
+/* ---- letterforms ------------------------------------------------------ */
+
+/* The glyphs are taken from the site's own typeface and written into the
+   file as paths. An SVG icon containing a <text> element is rendered with a
+   font from the *viewer's* machine, so a monogram would silently fall back
+   to whatever they happen to have. Paths always look the way they were cut. */
+const FONT = 'node_modules/@fontsource/schibsted-grotesk/files/schibsted-grotesk-latin-800-normal.woff';
+
+const font = opentype.parse((await readFile(FONT)).buffer);
+const CAP = font.tables.os2.sCapHeight / font.unitsPerEm;
+
+/* Returns a path for `text` whose cap height is exactly `capHeight` grid
+   units, horizontally centred on the tile and sitting on the given baseline. */
+function letters(text, capHeight, baseline, tracking = 0) {
+  const G = 32;
+  const fontSize = capHeight / CAP;
+
+  const path = new opentype.Path();
+  let x = 0;
+  for (const ch of text) {
+    const glyph = font.charToGlyph(ch);
+    path.extend(glyph.getPath(x, 0, fontSize));
+    x += (glyph.advanceWidth / font.unitsPerEm) * fontSize + tracking * fontSize;
+  }
+
+  /* Centre on the inked bounds rather than the advance widths, so the mark
+     is optically centred rather than merely arithmetically centred. */
+  const bb = path.getBoundingBox();
+  const dx = (G - (bb.x2 - bb.x1)) / 2 - bb.x1;
+  const out = new opentype.Path();
+  out.extend(path);
+  out.commands = out.commands.map((c) => {
+    const m = { ...c };
+    for (const k of ['x', 'x1', 'x2']) if (k in m) m[k] += dx;
+    for (const k of ['y', 'y1', 'y2']) if (k in m) m[k] += baseline;
+    return m;
+  });
+  return out.toPathData(3);
+}
 
 /* ---- the mark, drawn from those numbers ------------------------------- */
 
-function buildSvg({ tile, mark, radius, scale, seam, rows }, size = 32) {
+function buildSvg(d, size = 32) {
   const G = 32;
-  const m = (G - (G * scale) / 100) / 2;
-  const w = G - 2 * m;
-  const h = (w - seam * (rows - 1)) / rows;
-  const r = radius * 0.35;
+  const block = d.erHeight + d.gap + d.fiveHeight;
+  const top = (G - block) / 2 + d.optical;
 
-  const flaps = Array.from({ length: rows }, (_, i) =>
-    `  <rect x="${m.toFixed(2)}" y="${(m + i * (h + seam)).toFixed(2)}" ` +
-    `width="${w.toFixed(2)}" height="${h.toFixed(2)}" ` +
-    `rx="${r.toFixed(2)}" fill="${mark}"/>`
-  ).join('\n');
+  const er = letters('ER', d.erHeight, top + d.erHeight, d.erTrack);
+  const five = letters('5', d.fiveHeight, top + block);
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${G} ${G}" width="${size}" height="${size}">
-  <rect width="${G}" height="${G}" rx="${radius}" fill="${tile}"/>
-${flaps}
+  <rect width="${G}" height="${G}" rx="${d.radius}" fill="${d.tile}"/>
+  <path d="${er}" fill="${d.mark}"/>
+  <path d="${five}" fill="${d.mark}"/>
 </svg>
 `;
 }

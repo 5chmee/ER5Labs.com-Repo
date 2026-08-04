@@ -102,31 +102,34 @@ export default {
 
     d.h2('The design constraint that decides everything');
     d.p('A favicon is displayed at sixteen pixels. That is a grid of 256 pixels in total, less than a full stop on this page. Detail does not survive it. Whatever reads at sixteen pixels is a bold silhouette with strong contrast against its background, which is why well known icons are almost always one shape or one character on a filled tile.');
-    d.p('The mark here is a split-flap tile: the site accent as the background, with three rounded bars separated by thin gaps, referencing the departure board on the front page. It was chosen over a lettered monogram for two reasons. It survives sixteen pixels, and it carries no font dependency.');
-    d.callout('The font trap in SVG icons',
-      'An SVG containing a text element is rendered using a font on the viewer’s machine, not yours. If they do not have it, a carefully set monogram silently renders in whatever the default happens to be. A mark made of shapes always looks the way it was drawn.');
+    d.p('The mark is a stacked monogram: a small, widely spaced ER above a large 5, in cream on the terracotta tile. The 5 carries the icon, because a single numeral is the one element that stays legible at sixteen pixels.');
+    d.callout('The font trap in SVG icons, and how it was avoided',
+      'An SVG containing a text element is rendered using a font from the viewer’s machine, not yours. A carefully set monogram silently becomes whatever they happen to have installed. So the letters are not text: the outlines are read out of the site’s own typeface at build time and written into the file as paths. The letterforms match the headings exactly, and nothing depends on the visitor.');
 
     d.h2('Generated, not drawn');
     d.p('Keeping five images in agreement by hand is the same duplication problem the rest of the site avoids, so the icons are produced from one small configuration instead.');
     d.code([
       '// scripts/build-icons.mjs',
       'const design = {',
-      '  tile: "#bd5b34",  mark: "#f7f2e8",',
-      '  radius: 6, scale: 73, seam: 1, rows: 3,',
+      '  tile: "#bd5b34",  mark: "#f7f2e8",  radius: 6,',
+      '  erHeight: 7.0, erTrack: 0.30,',
+      '  fiveHeight: 15.4, gap: 1.0,',
       '};',
     ]);
     d.p('Running npm run icons regenerates every file from those numbers. Adjusting the design is a changed value rather than five images redrawn, and they cannot drift apart.');
 
     d.h2('Checking it rather than trusting it');
-    d.p('A favicon looks convincing on a design canvas at two hundred pixels and can be unreadable at sixteen. Rather than judging by eye, the icon was rendered at sixteen pixels and the pixels down its centre were read back and printed as characters, one per row.');
+    d.p('A mark looks convincing on a design canvas at two hundred pixels and can be unreadable at sixteen. Rather than judging by eye, the icon was rendered at sixteen pixels and the pixels read back and printed as characters, one per row, so the actual result could be inspected.');
+    d.p('That is how the tracking on the ER was settled. Set at a normal width the two letters merge into a single smudge; opened up to nearly a third of an em they at least resolve as two separate marks. Four settings were rendered and compared before one was chosen.');
     d.code([
-      'seam 1    ..############..     0 seams survive',
-      'seam 2    ..###??##??###..     2, faint',
-      'seam 2.5  ..###.?##?.###..     2, clean',
+      'track 0.09    .....++.++......   one merged smudge',
+      'track 0.18    ....++..++++....   still joined',
+      'track 0.30    ....+++..++.....   two distinct marks',
       '',
-      '#  flap    .  tile    ?  blended edge',
+      '#  full cream    +  partial    .  tile',
     ]);
-    d.p('The narrowest gap disappears completely at that size: three separate flaps render as one solid block. The test takes seconds, it is repeatable, and it answers a question that opinion cannot.');
+    d.p('The test also settled something no adjustment could fix. At sixteen pixels the ER is roughly four pixels tall, which is below the size at which letterforms resolve at all, so it will never be read as letters there. It becomes legible at thirty-two pixels, which is what a modern high-density screen actually uses for a tab, and fully clear everywhere larger.');
+    d.p('That is a reasonable trade rather than a flaw. At the smallest size the icon still reads as a distinctive cream numeral on terracotta, which is enough to find in a row of tabs, and the full monogram appears everywhere with room for it.');
     d.callout('Why this is the interesting part',
       'The habit generalises well beyond icons. Nearly every real problem found while building this site was found by measuring rather than assuming: the hash rate that justified writing SHA-256 by hand, where clicks were actually landing when the navigation swallowed them, the text coordinates that exposed clipped paragraphs in these documents.');
     d.p('The .ico is assembled by hand, because no ordinary image library writes that format. It is a six byte header, a sixteen byte directory entry per image giving its size and position, then the image data itself. Modern .ico files hold PNGs rather than raw bitmaps, which every browser since Internet Explorer 11 reads.');
@@ -164,8 +167,10 @@ export default {
        'Static output, no framework runtime, self-hosted fonts, animations that only move or fade, off-screen animation paused, and the one genuinely heavy feature moved onto background threads.'],
       ['Why does a favicon need five files?',
        'No format is universally supported. Browsers take the SVG, Google’s crawler and older clients ask for the .ico, iOS needs a 180 pixel PNG with square corners because it applies its own mask, and Android reads PNGs listed in a manifest. Each client takes the first format it recognises.'],
-      ['How did you decide what the icon should be?',
-       'By the constraint rather than by taste. It is displayed at sixteen pixels, so it has to be one bold silhouette with strong contrast. That ruled out anything detailed, and it ruled out text in the SVG, since that renders with a font the viewer might not have.'],
+      ['How did you decide what the icon should look like?',
+       'By the constraint rather than by taste. It is displayed at sixteen pixels, so one element has to carry it, which is the numeral. I rendered candidates down to sixteen pixels and read the pixels back rather than judging by eye, which is how the letter spacing was chosen and how I established the small ER can never be legible at that size.'],
+      ['Your icon has letters in it, but you said text in an SVG is a trap. How is that resolved?',
+       'The letters are not text. The outlines are read out of the site’s own typeface at build time with a font parsing library and written into the file as path data. The shapes match the headings exactly and nothing depends on what the visitor has installed.'],
       ['How does deployment work?',
        'Push to GitHub, Vercel rebuilds and publishes automatically. DNS at Cloudflare points the domain at Vercel, with the second domain redirecting to the primary.'],
     ]);
