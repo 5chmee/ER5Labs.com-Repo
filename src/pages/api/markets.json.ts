@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { instruments, type Instrument } from '../../data/markets';
+import { trending, MAX, SYMBOL } from '../../lib/trending';
 
 // Runs on demand (serverless) rather than being baked in at build time —
 // the browser can't call Yahoo directly because of CORS, so we proxy it here.
@@ -11,13 +12,6 @@ type Quote = {
   price: number;
   changePct: number | null;
 };
-
-const MAX = 8;
-
-// Anything not matching this never reaches the page. The ticker writes labels
-// with innerHTML, and these symbols now come from outside, so the shape is
-// checked here rather than trusted.
-const SYMBOL = /^[A-Z][A-Z0-9.-]{0,5}$/;
 
 // The handful of instruments that keep their friendly name and formatting if
 // they happen to trend. Everything else is a company, shown by its symbol.
@@ -51,22 +45,6 @@ const fetchQuote = async (item: Instrument): Promise<Quote | null> => {
   }
 };
 
-// The day's line-up, from the sibling route. That response is cached at the
-// edge for a day, so this normally costs nothing and the chosen companies stay
-// put until tomorrow while the prices below keep moving.
-const todaysSymbols = async (origin: string): Promise<string[]> => {
-  try {
-    const res = await fetch(new URL('/api/trending.json', origin), {
-      signal: AbortSignal.timeout(6000),
-    });
-    if (!res.ok) return [];
-    const json = await res.json();
-    return Array.isArray(json?.symbols) ? json.symbols : [];
-  } catch {
-    return [];
-  }
-};
-
 export const GET: APIRoute = async ({ url }) => {
   if (url.search) {
     return new Response('{"error":"no query parameters"}', {
@@ -75,8 +53,13 @@ export const GET: APIRoute = async ({ url }) => {
     });
   }
 
-  const trending = (await todaysSymbols(url.origin)).filter((s) => SYMBOL.test(s));
-  const symbols = [...new Set([...trending, ...instruments.map((i) => i.symbol)])];
+  // Called directly rather than over HTTP. Asking our own /api/trending.json
+  // meant relying on the request origin inside a serverless function, which is
+  // not the public one, so the fetch failed and the ticker quietly fell back
+  // to the fixed list.
+  const today = await trending();
+  const picked = today.symbols.filter((s) => SYMBOL.test(s));
+  const symbols = [...new Set([...picked, ...instruments.map((i) => i.symbol)])];
 
   const wanted: Instrument[] = symbols.map(
     (symbol) => known.get(symbol) ?? { symbol, label: symbol, unit: 'price' }
