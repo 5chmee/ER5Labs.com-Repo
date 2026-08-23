@@ -40,7 +40,15 @@ const fetchQuote = async (item: Instrument): Promise<Quote | null> => {
   }
 };
 
-export const GET: APIRoute = async () => {
+const reject = (body: string, status: number) =>
+  new Response(body, {
+    status,
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+  });
+
+export const GET: APIRoute = async ({ url }) => {
+  if (url.search) return reject('{"error":"no query parameters"}', 400);
+
   const results = await Promise.all(instruments.map(fetchQuote));
   const items = results.filter((q): q is Quote => q !== null);
 

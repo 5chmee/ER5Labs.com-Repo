@@ -338,42 +338,86 @@ const tiles = (label: string) => label.split('');
   const animating = new Set(flaps);
   allFlaps.forEach((el) => { if (!animating.has(el)) settle(el); });
   let timers: number[] = [];
+  let frame = 0;
 
-  const runFlaps = () => {
+  // One clock for the whole board. Every tile used to own a setInterval and
+  // build a fresh Animation on each tick, which meant forty-odd timers racing
+  // the same frame and a few hundred short-lived objects a second. Timers also
+  // drift, so tiles that should land together arrived a frame or two apart.
+  // Here a single rAF loop reads the clock once per frame and each tile keeps
+  // one Animation it rewinds, so the flips stay locked to the compositor.
+  const STEP = 150;
+  const clearAll = () => {
     timers.forEach((id) => { window.clearTimeout(id); window.clearInterval(id); });
     timers = [];
+    if (frame) { cancelAnimationFrame(frame); frame = 0; }
+  };
+
+  const runFlaps = () => {
+    clearAll();
+
+    type Tile = {
+      el: HTMLElement;
+      idx: number;
+      target: number;
+      due: number;
+      anim: Animation | null;
+      done: boolean;
+    };
+
+    const tiles: Tile[] = [];
+    const now = performance.now();
+
     flaps.forEach((el) => {
       const finalCh = (el.dataset.final || ' ').toUpperCase();
       if (reduce || finalCh === ' ') { el.textContent = nbsp(finalCh); return; }
-      const targetIdx = Math.max(0, CHARS.indexOf(finalCh));
+      const target = Math.max(0, CHARS.indexOf(finalCh));
       const link = el.closest('.board__link') as HTMLElement | null;
       const row = parseInt(link?.style.getPropertyValue('--row') || '0', 10) || 0;
       const i = parseInt(el.style.getPropertyValue('--i') || '0', 10) || 0;
       const spins = 6 + Math.floor(Math.random() * 7);
       // Cascade row-by-row only on the homepage; a lone row starts promptly.
       const startDelay = (onHome ? row * 210 : 0) + i * 78 + Math.floor(Math.random() * 50);
-      let idx = ((targetIdx - spins) % CHARS.length + CHARS.length) % CHARS.length;
+      const idx = ((target - spins) % CHARS.length + CHARS.length) % CHARS.length;
       el.textContent = nbsp(CHARS[idx]);
-      const to = window.setTimeout(() => {
-        const iv = window.setInterval(() => {
-          idx = (idx + 1) % CHARS.length;
-          el.textContent = nbsp(CHARS[idx]);
-          const last = idx === targetIdx;
-          // Compositor-driven flip: constant speed while tumbling, gentle
-          // ease-out settle on the final character. No reflow => no stutter.
-          el.animate(
-            [{ transform: 'rotateX(-90deg)' }, { transform: 'rotateX(0deg)' }],
-            {
-              duration: last ? 320 : 150,
-              easing: last ? 'cubic-bezier(0.22, 1, 0.36, 1)' : 'linear',
-            }
-          );
-          if (last) window.clearInterval(iv);
-        }, 150);
-        timers.push(iv);
-      }, startDelay);
-      timers.push(to);
+      tiles.push({ el, idx, target, due: now + startDelay, anim: null, done: false });
     });
+
+    if (tiles.length === 0) return;
+
+    let left = tiles.length;
+    const tick = (time: number) => {
+      for (const t of tiles) {
+        if (t.done || time < t.due) continue;
+        t.idx = (t.idx + 1) % CHARS.length;
+        t.el.textContent = nbsp(CHARS[t.idx]);
+        const last = t.idx === t.target;
+
+        // Rewind the tile's own Animation rather than making another one.
+        if (!t.anim) {
+          t.anim = t.el.animate(
+            [{ transform: 'rotateX(-90deg)' }, { transform: 'rotateX(0deg)' }],
+            { duration: STEP, easing: 'linear', fill: 'none' }
+          );
+        } else {
+          const effect = t.anim.effect as KeyframeEffect;
+          effect.updateTiming({
+            duration: last ? 320 : STEP,
+            easing: last ? 'cubic-bezier(0.22, 1, 0.36, 1)' : 'linear',
+          });
+          t.anim.currentTime = 0;
+          t.anim.play();
+        }
+
+        // Step from the deadline, not from now, so a late frame does not push
+        // the whole run out of step.
+        t.due += STEP;
+        if (last) { t.done = true; left -= 1; }
+      }
+      frame = left > 0 ? requestAnimationFrame(tick) : 0;
+    };
+
+    frame = requestAnimationFrame(tick);
   };
 
   const boardEl = document.querySelector('.board');
@@ -396,7 +440,14 @@ const tiles = (label: string) => label.split('');
     const maybeRun = () => {
       if (!visible || document.hidden) return;
       started = true;
-      runFlaps();
+      // Wait for the board's own typeface. Starting mid-load meant the first
+      // few flips happened while the browser was still swapping fonts and
+      // relaying out every tile, which is what made the opening run stutter.
+      if (document.fonts && document.fonts.status !== 'loaded') {
+        document.fonts.ready.then(runFlaps);
+      } else {
+        runFlaps();
+      }
     };
 
     const io = new IntersectionObserver((entries) => {

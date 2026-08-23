@@ -6,7 +6,15 @@ import type { APIRoute } from 'astro';
 // cached at the edge and shared between visitors.
 export const prerender = false;
 
-export const GET: APIRoute = async () => {
+const reject = (body: string, status: number) =>
+  new Response(body, {
+    status,
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+  });
+
+export const GET: APIRoute = async ({ url }) => {
+  if (url.search) return reject('{"error":"no query parameters"}', 400);
+
   try {
     const headers = { 'User-Agent': 'Mozilla/5.0 (compatible; ER5Labs/1.0)' };
     const grab = (u: string) =>
