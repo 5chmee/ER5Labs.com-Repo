@@ -1,6 +1,13 @@
 // ---------------------------------------------------------------------------
-// MARKET TICKER — the instruments shown in the strip at the top of the
-// homepage. Add or remove a line to change the ticker.
+// MARKET TICKER — the fallback line-up, and the friendly names.
+//
+// The strip normally shows whatever is trending that day, chosen by
+// src/pages/api/trending.json.ts. This list does two jobs behind that:
+//
+//   1. If both trending sources are unreachable, the ticker shows these
+//      instead of emptying out.
+//   2. If one of these does trend, it keeps the name and formatting given
+//      here rather than appearing as a bare symbol.
 //
 //   symbol — Yahoo Finance symbol (futures use "=F", indices start with "^")
 //   label  — what the ticker shows
