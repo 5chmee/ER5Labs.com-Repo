@@ -13,12 +13,12 @@
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.3",
-    "@astrojs/vercel": "^9.0.5",
+    "@astrojs/vercel": "^11.0.8",
     "@fontsource/dm-mono": "^5.3.0",
     "@fontsource/schibsted-grotesk": "^5.3.0",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
-    "astro": "^5.13.0"
+    "astro": "^7.2.6"
   },
   "devDependencies": {
     "opentype.js": "^2.0.0",
