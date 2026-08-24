@@ -48,9 +48,16 @@ const { project } = Astro.props;
         <div class="detail__media">
           {project.media.map((m) =>
             m.type === 'image' ? (
-              <img src={m.src} alt={m.alt ?? ''} loading="lazy" />
+              <img
+                src={m.src}
+                alt={m.alt ?? ''}
+                width={m.width}
+                height={m.height}
+                loading="lazy"
+                decoding="async"
+              />
             ) : (
-              <video src={m.src} controls playsinline></video>
+              <video src={m.src} width={m.width} height={m.height} controls playsinline preload="metadata"></video>
             )
           )}
         </div>
@@ -96,6 +103,7 @@ const { project } = Astro.props;
   .detail__media { margin-top: 3rem; display: grid; gap: 1rem; }
   .detail__media img, .detail__media video {
     width: 100%;
+    height: auto;
     border-radius: var(--radius-lg);
     border: 1px solid var(--line);
   }

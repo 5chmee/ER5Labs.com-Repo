@@ -3,7 +3,17 @@
 // Projects page and its own detail page at /projects/<slug>.
 // ---------------------------------------------------------------------------
 
-export type Media = { type: 'image' | 'video'; src: string; alt?: string };
+// width and height are the file's real pixel dimensions. They are not used
+// to size anything — CSS still does that — but giving them to the browser lets
+// it reserve the right space before the file arrives, so the page does not
+// jump as images load.
+export type Media = {
+  type: 'image' | 'video';
+  src: string;
+  alt?: string;
+  width?: number;
+  height?: number;
+};
 
 export type Project = {
   slug: string;                 // URL-safe id, e.g. "er5labs"

@@ -183,7 +183,7 @@ await mkdir(out, { recursive: true });
 const svg = buildSvg(design);
 const svgBuf = Buffer.from(svg);
 const png = (source, size) =>
-  sharp(source, { density: 384 }).resize(size, size).png({ compressionLevel: 9 }).toBuffer();
+  sharp(source, { density: 384 }).resize(size, size).png({ compressionLevel: 9, effort: 10, palette: true }).toBuffer();
 
 await writeFile(join(out, 'favicon.svg'), svg);
 
@@ -200,7 +200,7 @@ await writeFile(
   await sharp(Buffer.from(iosSvg), { density: 384 })
     .resize(180, 180)
     .flatten({ background: design.tile })
-    .png({ compressionLevel: 9 })
+    .png({ compressionLevel: 9, effort: 10, palette: true })
     .toBuffer()
 );
 
