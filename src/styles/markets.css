@@ -1,0 +1,17 @@
+/* Home page markets panel: every quote is now a link to its stock page. */
+a.lede-quote { text-decoration: none; }
+.quotes > a {
+  display: flex; justify-content: space-between; gap: 0.75rem; align-items: baseline;
+  padding: 0.5rem 0.9rem 0.5rem 0; border-bottom: 1px solid var(--rule); text-decoration: none;
+}
+a.lede-quote:hover .sym,
+.quotes > a:hover .sym { text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--accent); }
+.quotes .q__v { display: inline-flex; gap: 0.45rem; align-items: baseline; }
+.quotes .mv { font-family: var(--mono); font-size: 0.72rem; font-variant-numeric: tabular-nums; }
+.ticker__more { display: inline-block; margin-top: 0.7rem; font-family: var(--ui); font-size: 0.8rem; color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--rule-2); }
+.ticker__more:hover { border-bottom-color: var(--accent); }
+
+/* Shared by the markets pages: a price that just changed flashes. */
+.px.is-up, [data-px].is-up { animation: tickUp 1.6s ease-out; }
+.px.is-down, [data-px].is-down { animation: tickDown 1.6s ease-out; }
+@media (prefers-reduced-motion: reduce) { [data-px].is-up, [data-px].is-down { animation: none; } }

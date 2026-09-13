@@ -1,0 +1,237 @@
+---
+// Why a tracked stock moved: live price, reasons assembled from the numbers,
+// the news and the forums, and the sources behind each of them.
+import Site from '../../../layouts/Site.astro';
+import { report, type Report } from '../../../lib/movers';
+import { trackedSymbols, PAGE_SYMBOL, labelFor } from '../../../lib/quotes';
+import { rateLimited } from '../../../lib/http';
+
+export const prerender = false;
+
+const limited = rateLimited(Astro);
+if (limited) return limited;
+
+// A query string would split the edge cache, so it is dropped.
+if (Astro.url.search) return Astro.redirect(Astro.url.pathname, 308);
+
+let raw = '';
+try {
+  raw = decodeURIComponent(Astro.params.symbol ?? '');
+} catch {
+  raw = '';
+}
+const symbol = raw.toUpperCase();
+if (PAGE_SYMBOL.test(symbol) && raw !== symbol) {
+  return Astro.redirect(`/playground/markets/${encodeURIComponent(symbol)}`, 308);
+}
+
+let tracked = false;
+let data: Report | null = null;
+if (PAGE_SYMBOL.test(symbol)) {
+  try {
+    tracked = (await trackedSymbols()).includes(symbol);
+    if (tracked) data = await report(symbol);
+  } catch {
+    data = null;
+  }
+}
+
+const status = !tracked ? 404 : data ? 200 : 503;
+Astro.response.status = status;
+Astro.response.headers.set(
+  'Cache-Control',
+  status === 200 ? 'public, s-maxage=60, stale-while-revalidate=300' : status === 404 ? 'public, s-maxage=300' : 'no-store'
+);
+
+const label = data?.label ?? (PAGE_SYMBOL.test(symbol) ? labelFor(symbol) : 'This stock');
+const money = (v: number | null) =>
+  v === null ? 'n/a' : v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const whole = (v: number | null) => (v === null ? 'n/a' : Math.round(v).toLocaleString('en-GB'));
+const pct = (v: number | null) => (v === null ? 'n/a' : `${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(2)}%`);
+const dir = (v: number | null) => (v === null ? '' : v > 0 ? 'up' : v < 0 ? 'down' : '');
+const arrow = (v: number | null) => (v === null ? '' : v > 0 ? '▲ ' : v < 0 ? '▼ ' : '');
+const stamp = (ms: number) =>
+  new Date(ms).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) + ' UTC';
+const unit = symbol === '^TNX' ? 'yield' : 'price';
+
+// A 60-day line of closing prices, drawn as plain SVG.
+let spark = '';
+if (data && data.spark.length > 1) {
+  const lo = Math.min(...data.spark);
+  const hi = Math.max(...data.spark);
+  const span = hi - lo || 1;
+  spark = data.spark
+    .map((v, i) => `${((i / (data.spark.length - 1)) * 600).toFixed(1)},${(110 - ((v - lo) / span) * 100).toFixed(1)}`)
+    .join(' ');
+}
+const trend = data && data.spark.length > 1 ? (data.spark[data.spark.length - 1] >= data.spark[0] ? 'up' : 'down') : '';
+---
+<Site
+  title={`Why ${label} moved · ER5 Labs`}
+  description={`What is moving ${label} today: the price, the news, forum activity and the numbers, updated every minute.`}
+  active="playground"
+  skipTo="#main"
+>
+  <main id="main" class="sheet">
+    <article class="detail stock">
+      <a class="back" href="/playground/markets">&larr; Markets, explained</a>
+
+      {status === 404 && (
+        <>
+          <h1>{PAGE_SYMBOL.test(symbol) ? symbol : 'That stock'} is not on today's list</h1>
+          <div class="detail__body">
+            <p class="detail__lede">
+              Pages exist for the stocks the markets panel is tracking today, which change daily with what is
+              most traded and most discussed.
+            </p>
+            <p><a class="tl__link" href="/playground/markets">See today's list &rarr;</a></p>
+          </div>
+        </>
+      )}
+
+      {status === 503 && (
+        <>
+          <h1>{label}</h1>
+          <div class="detail__body">
+            <p class="detail__lede">The market data for this stock is not answering right now. Try again in a minute.</p>
+          </div>
+        </>
+      )}
+
+      {data && (
+        <div id="report">
+          <h1>
+            {data.label}
+            {data.name && data.name !== data.label && <span class="stock__name">{data.name}</span>}
+          </h1>
+
+          <div class="stock__quote" data-sym={data.symbol} data-unit={unit}>
+            <span class="stock__px" data-px data-value={data.price}>{money(data.price)}{unit === 'yield' ? '%' : ''}</span>
+            <span class={`mv ${dir(data.changePct)}`} data-mv>{arrow(data.changePct)}{data.changePct === null ? '' : `${Math.abs(data.changePct).toFixed(2)}%`}</span>
+            <span class="stock__cur">{[data.currency, data.exchange].filter(Boolean).join(' · ')}</span>
+          </div>
+          <p class="stock__as">
+            <span class="ticker__live"><span class="ticker__dot" aria-hidden="true"></span>Live</span>
+            · last trade <span data-time>{data.marketTime ? new Date(data.marketTime * 1000).toLocaleTimeString('en-GB', { timeZone: 'UTC' }) + ' UTC' : 'n/a'}</span>
+            · report updated {stamp(data.updated)}, refreshed every minute
+          </p>
+
+          <section class="stock__part">
+            <h2>Why it moved</h2>
+            <ul class="why">
+              {data.reasons.map((r) => (
+                <li>
+                  {r.text}
+                  {r.refs.length > 0 && (
+                    <span class="why__refs">
+                      {r.refs.map((i) => <a href={`#news-${i + 1}`} aria-label={`Source ${i + 1}`}>[{i + 1}]</a>)}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+            <p class="stock__caveat">
+              Assembled automatically from the sources below. It shows what coincided with the move, which is not
+              proof of what caused it, and none of it is investment advice.
+            </p>
+          </section>
+
+          <section class="stock__part">
+            <h2>The numbers</h2>
+            {spark && (
+              <svg class={`spark spark--${trend}`} viewBox="0 0 600 120" role="img" aria-label={`Closing prices over the last ${data.spark.length} trading days`}>
+                <polyline points={spark} />
+              </svg>
+            )}
+            <dl class="meta stock__stats">
+              <div><dt>Day range</dt><dd>{money(data.dayLow)} to {money(data.dayHigh)}</dd></div>
+              <div><dt>52-week range</dt><dd>{money(data.yearLow)} to {money(data.yearHigh)}</dd></div>
+              <div><dt>Volume</dt><dd>{whole(data.volume)}</dd></div>
+              <div><dt>3-month avg volume</dt><dd>{whole(data.avgVolume)}</dd></div>
+              <div><dt>5 days</dt><dd class={`mv ${dir(data.ret5d)}`}>{pct(data.ret5d)}</dd></div>
+              <div><dt>1 month</dt><dd class={`mv ${dir(data.ret1m)}`}>{pct(data.ret1m)}</dd></div>
+              <div><dt>S&amp;P 500 today</dt><dd class={`mv ${dir(data.spyPct)}`}>{pct(data.spyPct)}</dd></div>
+            </dl>
+          </section>
+
+          <section class="stock__part">
+            <h2>Forums</h2>
+            {data.forum ? (
+              <dl class="meta stock__stats">
+                <div><dt>Mention rank</dt><dd>#{data.forum.rank}{data.forum.rank24 !== null && ` (was #${data.forum.rank24})`}</dd></div>
+                <div><dt>Mentions, 24h</dt><dd>{whole(data.forum.mentions)}{data.forum.mentions24 !== null && ` (was ${whole(data.forum.mentions24)})`}</dd></div>
+                <div><dt>Upvotes</dt><dd>{whole(data.forum.upvotes)}</dd></div>
+              </dl>
+            ) : (
+              <p class="stock__muted">Not among the 200 most discussed tickers on Reddit and Stocktwits right now.</p>
+            )}
+          </section>
+
+          <section class="stock__part">
+            <h2>News</h2>
+            {data.news.length ? (
+              <ol class="news">
+                {data.news.map((n, i) => (
+                  <li id={`news-${i + 1}`}>
+                    <a href={n.url} target="_blank" rel="noopener noreferrer nofollow">{n.title}</a>
+                    <span class="news__meta">{n.source} · {stamp(n.time)}</span>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p class="stock__muted">No coverage found in the last four days.</p>
+            )}
+          </section>
+
+          <section class="stock__part stock__sources">
+            <h2>Sources</h2>
+            <p>
+              Prices and history: Yahoo Finance, streamed live while the market trades. Headlines: Yahoo Finance and
+              Google News feeds for the last four days. Forum activity: Apewisdom, which counts mentions across Reddit
+              and Stocktwits. The report is rebuilt from these every minute.
+            </p>
+          </section>
+        </div>
+      )}
+    </article>
+  </main>
+</Site>
+
+<script>
+  import '../../../scripts/stock-page.js';
+</script>
+
+<style>
+  .stock { max-width: 820px; }
+  .stock h1 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.8rem; max-width: none; }
+  .stock__name { font-family: var(--ui); font-weight: 400; font-size: 0.95rem; color: var(--muted); letter-spacing: 0; }
+  .stock__quote { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.4rem 1rem; margin-top: 1rem; }
+  .stock__px { font-family: var(--mono); font-size: 2rem; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  .stock__quote .mv { font-family: var(--mono); font-size: 1rem; font-variant-numeric: tabular-nums; }
+  .stock__cur { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); }
+  .stock__as { margin: 0.5rem 0 0; font-family: var(--mono); font-size: 0.72rem; color: var(--muted); }
+
+  .stock__part { border-top: 1px solid var(--rule); margin-top: 2rem; padding-top: 1.3rem; }
+  .stock__part h2 { font-family: var(--ui); font-weight: 600; font-size: 1.05rem; margin: 0 0 0.8rem; }
+  .why { margin: 0; padding-left: 1.1rem; max-width: var(--measure); }
+  .why li { color: var(--ink-2); margin-bottom: 0.6rem; }
+  .why__refs { margin-left: 0.35rem; font-family: var(--mono); font-size: 0.72rem; white-space: nowrap; }
+  .why__refs a { color: var(--muted); text-decoration: none; margin-right: 0.2rem; }
+  .why__refs a:hover { color: var(--ink); }
+  .stock__caveat, .stock__muted, .stock__sources p {
+    font-family: var(--ui); font-size: 0.8rem; color: var(--muted); max-width: var(--measure);
+  }
+  .stock__stats { margin-top: 0.4rem; }
+
+  .spark { width: 100%; height: auto; margin: 0.2rem 0 0.6rem; overflow: visible; }
+  .spark polyline { fill: none; stroke: var(--ink-2); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+  .spark--up polyline { stroke: var(--up); }
+  .spark--down polyline { stroke: var(--down); }
+
+  .news { margin: 0; padding-left: 1.3rem; max-width: var(--measure); }
+  .news li { margin-bottom: 0.75rem; color: var(--muted); scroll-margin-top: 80px; }
+  .news li:target a { background: var(--mark); }
+  .news a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--rule-2); }
+  .news a:hover { border-bottom-color: var(--accent); }
+  .news__meta { display: block; margin-top: 0.15rem; font-family: var(--mono); font-size: 0.7rem; }
+</style>

@@ -1,6 +1,9 @@
 // The site: data, views, router and the live markets panel. Every view is
 // built as a string and written with innerHTML, so all content goes through
 // esc() and every link through SLUG or PAGE.
+import '../styles/markets.css';
+import { liveQuotes } from './live-quotes.js';
+
 const TRACKS = {
   studio:     { title:'Studio',     blurb:'Commissioned work, built to a brief for a client.', note:'Paid engagements.' },
   projects:   { title:'Projects',   blurb:'Things I built because I wanted to know whether they would work.', note:'Self-directed builds.' },
@@ -60,6 +63,12 @@ const ITEMS = [
           'The parts I would point at: a content security policy scoped to the three origins the page actually contacts, endpoints that refuse query strings so the edge cache cannot be bypassed, a build step that strips maintenance comments out of the shipped HTML, and an icon set generated from one small configuration rather than five hand-drawn files.',
           'It is also where most of the measuring happens. Several things on this site were changed because a profiler or a pixel readout disagreed with how it looked.'] },
 
+  { t:'playground', slug:'markets', title:'Markets, explained', date:'2026-09',
+    href:'/playground/markets',
+    area:'Markets', kit:'WebSockets · Protobuf · RSS · Yahoo Finance · Apewisdom',
+    blurb:'The most traded and most discussed stocks today, streaming live, each with a page that lays out what moved it: the news, the forum chatter and the numbers, with every source linked.',
+    body:['The live list and a page for each stock are on their own pages.'] },
+
   { t:'playground', slug:'mining-demo', title:'Bitcoin mining, as a probability', date:'2026-07',
     href:'/playground/bitcoin-mining-game',
     area:'Probability', kit:'Web Workers · SHA-256 · WebSockets · Exponential distribution · Expected value',
@@ -97,6 +106,16 @@ const DEGREE = {
 };
 
 const HISTORY = [
+  { kind:'job', start:'2026-07', end:'Present', current:true,
+    title:'Confidential AI RAG agent, pivoted to a redaction tool first', org:'SBH & Co. Chartered Accountants, client engagement',
+    lead:'Ongoing client work: a proprietary redaction and conversion tool for the firm first, with the confidential RAG agent to be built on top of it.',
+    duties:['Rescoped a confidential RAG agent, hosted on AWS in the Mumbai region, into a redaction tool first, after weighing the servers, retrieval stack and front end against what the practice needed to see working.',
+            'Building the tool around the firm’s own documents: bank statements and ledgers converted to clean text, with identifying details stripped on the firm’s machines before anything reaches a model.',
+            'Checking redaction by reading the output rather than assuming it, and turning every miss into a new rule.',
+            'Dropped the custom Tally and Winman plugins from the first scope once costs were restructured, since the build and upkeep did not justify the time they would save.'],
+    kit:'Python · spaCy (NER) · pdfplumber · pandas · Client scoping',
+    project:'confidential-ai', projectLabel:'The full project write-up' },
+
   { kind:'job', start:'2026-07', end:'2026-09',
     title:'Chartered accountancy intern', org:'SBH & Co. Chartered Accountants',
     lead:'Automating the document handling, and the GST and balance sheet work for clients with a combined ₹165 crore under review.',
@@ -272,7 +291,7 @@ function home() {
   ${block('playground', 2)}
   <section class="part" id="ticker-block"><div class="part__grid">
     <div class="rail"><p class="lbl">Markets</p><h2>Most traded today</h2>
-      <p class="note">Live while you are watching. Updates every minute.</p></div>
+      <p class="note">Streams live while markets trade. Select a stock to see what moved it.</p></div>
     <div id="ticker" aria-live="polite"><p class="ticker__wait">Loading…</p></div>
   </div></section>
 
@@ -404,7 +423,7 @@ function panel(w) {
   }
   return '<ul>' + w.duties.map((d) => '<li>' + esc(d) + '</li>').join('') + '</ul>' +
     skills('Skills and tools', w.kit) +
-    (w.project ? moreLink(w.project, 'The script behind this role') : '');
+    (w.project ? moreLink(w.project, w.projectLabel || 'The script behind this role') : '');
 }
 
 function about() {
@@ -497,48 +516,55 @@ const SAMPLE = { sample:true, items:[
 // is checked before it is used: a short string label, a finite price, and a
 // finite change or none.
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
+const MARKET_SYM = /^[A-Z0-9^=.-]{1,12}$/;
 function cleanQuotes(j) {
   if (!j || !Array.isArray(j.items)) return [];
   return j.items
     .filter((q) => q && typeof q.label === 'string' && q.label.length <= 24 &&
       isNum(q.price) && (q.changePct == null || isNum(q.changePct)))
-    .map((q) => ({ label: q.label, price: q.price, changePct: q.changePct ?? null, unit: q.unit === 'yield' ? 'yield' : 'price' }))
+    .map((q) => ({
+      symbol: typeof q.symbol === 'string' && MARKET_SYM.test(q.symbol) ? q.symbol : null,
+      label: q.label, price: q.price, changePct: q.changePct ?? null, unit: q.unit === 'yield' ? 'yield' : 'price',
+    }))
     .slice(0, 7);
 }
 
-// Last price seen per symbol, so a change can be shown as it happens.
-const lastPrice = new Map();
+// A stock page exists for every live quote; the symbol is checked here and
+// again, against today's list, by the page itself.
+const stockHref = (symbol) => '/playground/markets/' + encodeURIComponent(symbol);
 
+// The panel's markup. Live quotes are links carrying data-sym, data-px and
+// data-mv, which the price stream updates in place between these repaints.
 function paintTicker(el, data) {
   const num = (q) => q.price.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) +
     (q.unit === 'yield' ? '%' : '');
+  const px = (q) => '<span class="px" data-px data-value="' + q.price + '">' + num(q) + '</span>';
   const move = (q) => {
-    if (q.changePct == null) return '';
+    if (q.changePct == null) return '<span class="mv" data-mv></span>';
     const dir = q.changePct > 0 ? 'up' : q.changePct < 0 ? 'down' : '';
     const arrow = q.changePct > 0 ? '▲' : q.changePct < 0 ? '▼' : '';
-    return '<span class="mv ' + dir + '">' + arrow + ' ' + Math.abs(q.changePct).toFixed(2) + '%</span>';
+    return '<span class="mv ' + dir + '" data-mv>' + arrow + ' ' + Math.abs(q.changePct).toFixed(2) + '%</span>';
   };
-  const flash = (q) => {
-    const before = lastPrice.get(q.label);
-    return before == null || before === q.price ? '' : q.price > before ? ' is-up' : ' is-down';
-  };
+  const link = !data.sample;
+  const open = (q, cls) => (link && q.symbol
+    ? '<a class="' + cls + '" href="' + stockHref(q.symbol) + '" data-sym="' + esc(q.symbol) + '" data-unit="' + q.unit + '">'
+    : '<div class="' + cls + '">');
+  const shut = (q) => (link && q.symbol ? '</a>' : '</div>');
 
   const [lead, ...rest] = data.items;
   const foot = data.sample
     ? 'Sample figures: the live feed is not answering right now. It will keep trying.'
-    : '<span class="ticker__live"><span class="ticker__dot" aria-hidden="true"></span>Live</span> · as at ' +
+    : '<span class="ticker__live"><span class="ticker__dot" aria-hidden="true"></span>Live</span> · last trade <span data-time>' +
       new Date(data.updated).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit', second:'2-digit' }) +
-      ' · most traded and most discussed today';
+      '</span> · prices stream while markets trade';
 
   el.innerHTML =
-    '<div class="lede-quote"><span class="sym">' + esc(lead.label) + '</span>' +
-    '<span class="px' + flash(lead) + '">' + num(lead) + '</span>' + move(lead) + '</div>' +
+    open(lead, 'lede-quote') + '<span class="sym">' + esc(lead.label) + '</span>' + px(lead) + move(lead) + shut(lead) +
     '<div class="quotes">' + rest.map((q) =>
-      '<div><span class="sym">' + esc(q.label) + '</span>' +
-      '<span class="px' + flash(q) + '">' + num(q) + ' ' + move(q) + '</span></div>').join('') + '</div>' +
-    '<p class="ticker__foot">' + foot + '</p>';
-
-  if (!data.sample) data.items.forEach((q) => lastPrice.set(q.label, q.price));
+      open(q, 'q') + '<span class="sym">' + esc(q.label) + '</span>' +
+      '<span class="q__v">' + px(q) + move(q) + '</span>' + shut(q)).join('') + '</div>' +
+    '<p class="ticker__foot">' + foot + '</p>' +
+    (link ? '<a class="ticker__more" href="/playground/markets">Why are they moving? &rarr;</a>' : '');
 }
 
 // Polling plan. The endpoint is cached at the edge for 60 seconds, so asking
@@ -549,7 +575,18 @@ function paintTicker(el, data) {
 // jitter so visitors who arrived together do not all ask at once.
 const TICK_MS = 60_000;
 const MAX_WAIT = 10 * 60_000;
-const tick = { el: null, timer: 0, wait: TICK_MS, at: 0, busy: false, near: false, io: null, live: false };
+const tick = { el: null, timer: 0, wait: TICK_MS, at: 0, busy: false, near: false, io: null, live: false, stream: null };
+// Between polls, prices come from the live stream. It runs only while the
+// panel is on or near the screen and the tab is visible.
+const stopStream = () => {
+  if (tick.stream) tick.stream.stop();
+  tick.stream = null;
+};
+const startStream = () => {
+  if (!tick.el || !tick.live) return;
+  if (!tick.stream) tick.stream = liveQuotes(tick.el);
+  tick.stream.refreshed();
+};
 const due = () => Date.now() - tick.at >= tick.wait - 1000;
 // The observer below starts a poll the moment the panel scrolls into range,
 // but the decision itself is made from the panel's position, measured once
@@ -565,7 +602,10 @@ async function pollTicker() {
   if (!el || !el.isConnected || tick.busy) return;
   // Hidden tab or panel far off screen: stop here. The listeners below call
   // straight back in when that changes.
-  if (document.hidden || !(tick.near || isNear(el))) return;
+  if (document.hidden || !(tick.near || isNear(el))) {
+    if (!document.hidden) stopStream();
+    return;
+  }
 
   tick.busy = true;
   let data = null;
@@ -590,6 +630,7 @@ async function pollTicker() {
     tick.wait = TICK_MS;
     tick.live = true;
     paintTicker(el, data);
+    startStream();
   } else {
     tick.wait = Math.min(tick.wait * 2, MAX_WAIT);
     if (!tick.live) paintTicker(el, SAMPLE);
@@ -603,7 +644,9 @@ function startTicker(el) {
   if ('IntersectionObserver' in window) {
     tick.io = new IntersectionObserver(([e]) => {
       tick.near = e.isIntersecting;
-      if (tick.near && due()) pollTicker();
+      if (!tick.near) stopStream();
+      else if (due()) pollTicker();
+      else startStream();
     }, { rootMargin: '400px 0px' });
     tick.io.observe(el);
   } else {
@@ -614,6 +657,7 @@ function startTicker(el) {
 
 function stopTicker() {
   clearTimeout(tick.timer);
+  stopStream();
   if (tick.io) tick.io.disconnect();
   Object.assign(tick, { el: null, io: null, near: false, busy: false });
 }
