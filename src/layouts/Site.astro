@@ -9,6 +9,7 @@ import '@fontsource/ibm-plex-sans/600.css';
 import '@fontsource/ibm-plex-mono/400.css';
 import '@fontsource/ibm-plex-mono/500.css';
 import '../styles/site.css';
+import '../styles/lamp.css';
 import Analytics from '@vercel/analytics/astro';
 import SpeedInsights from '@vercel/speed-insights/astro';
 
@@ -40,6 +41,8 @@ const NAV = [
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Before anything paints: apply a saved light or dark choice. -->
+    <script is:inline src="/theme.js"></script>
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
@@ -72,6 +75,23 @@ const NAV = [
         </nav>
       </div>
     </header>
+
+    <div class="lamp">
+      <button
+        type="button"
+        class="lamp__cord"
+        id="lamp-toggle"
+        aria-label="Switch between light and dark"
+        aria-pressed="false"
+        title="Pull to switch the lights"
+      >
+        <span class="lamp__wire" aria-hidden="true"></span>
+        <span class="lamp__knob" aria-hidden="true"></span>
+      </button>
+    </div>
+    <script>
+      import '../scripts/lamp.js';
+    </script>
 
     <slot />
 

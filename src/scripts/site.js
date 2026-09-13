@@ -106,7 +106,7 @@ const DEGREE = {
 };
 
 const HISTORY = [
-  { kind:'job', start:'2026-07', end:'Present', current:true,
+  { kind:'job', start:'2026-08', end:'Present', current:true,
     title:'Confidential AI RAG agent, pivoted to a redaction tool first', org:'SBH & Co. Chartered Accountants, client engagement',
     lead:'Ongoing client work: a proprietary redaction and conversion tool for the firm first, with the confidential RAG agent to be built on top of it.',
     duties:['Rescoped a confidential RAG agent, hosted on AWS in the Mumbai region, into a redaction tool first, after weighing the servers, retrieval stack and front end against what the practice needed to see working.',
