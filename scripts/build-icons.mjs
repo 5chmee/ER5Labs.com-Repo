@@ -1,13 +1,10 @@
 /**
- * Generates every icon the site needs from one set of numbers.
+ * Builds the whole icon set from the numbers below.
  *
- * The numbers below are exactly the controls from the live designer, so
- * changing a value here and re-running reproduces what you saw on screen.
+ *   npm run icons
  *
- *   node scripts/build-icons.mjs
- *
- * Writes into public/: favicon.svg, favicon.ico, apple-touch-icon.png,
- * icon-192.png, icon-512.png, og-icon.png.
+ * Writes favicon.svg, favicon.ico, apple-touch-icon.png and the manifest PNGs
+ * into public/.
  */
 import sharp from 'sharp';
 import opentype from 'opentype.js';
@@ -21,11 +18,8 @@ const design = {
   mark: '#e6a13a',   // amber, the departure board type
   radius: 7,         // tile corner, on a 32-unit grid
 
-  /* The tracking on ER is unusually wide and is doing real work. At 16px the
-     two letters are about four pixels tall, which is below the size at which
-     letterforms resolve. Set normally they merge into one smudge; opened up,
-     they at least read as two separate marks. Verified by rendering to 16px
-     and reading the pixels back, not by eye. */
+  /* The wide ER tracking matters: at 16px the letters are ~4px tall and merge
+     into one mark at normal spacing. Checked by reading back the pixels. */
   erHeight: 5.8,     // cap height of the small ER, in 32-unit grid units
   erTrack: 0.22,     // extra space between E and R, as a fraction of an em
   erArc: 20,         // degrees of arc the ER is set on; 0 is a straight line
@@ -36,10 +30,8 @@ const design = {
 
 /* ---- letterforms ------------------------------------------------------ */
 
-/* The glyphs are taken from the site's own typeface and written into the
-   file as paths. An SVG icon containing a <text> element is rendered with a
-   font from the *viewer's* machine, so a monogram would silently fall back
-   to whatever they happen to have. Paths always look the way they were cut. */
+/* Glyph outlines are baked in as paths. A <text> element in an SVG icon
+   renders with a font from the viewer's machine, not ours. */
 const FONT = 'node_modules/@fontsource/schibsted-grotesk/files/schibsted-grotesk-latin-800-normal.woff';
 
 const font = opentype.parse((await readFile(FONT)).buffer);
@@ -138,15 +130,13 @@ function buildSvg(d, size = 32) {
 `;
 }
 
-/* A square-cornered variant for iOS, which applies its own corner mask and
-   would otherwise clip our rounded corners into a lumpy shape. */
+/* Square corners for iOS, which applies its own mask. */
 const iosSvg = buildSvg({ ...design, radius: 0 });
 
 /* ---- .ico, hand-assembled around PNGs --------------------------------- */
 
-/* An .ico is a 6-byte header, one 16-byte directory entry per image, then
-   the image payloads. Modern .ico files embed PNG rather than raw bitmaps,
-   which every browser since IE11 reads. */
+/* .ico layout: 6-byte header, a 16-byte directory entry per image, then the
+   payloads. PNG payloads are fine for anything past IE11. */
 function buildIco(pngs) {
   const header = Buffer.alloc(6);
   header.writeUInt16LE(0, 0);            // reserved
@@ -193,8 +183,7 @@ const icoPngs = await Promise.all(
 );
 await writeFile(join(out, 'favicon.ico'), buildIco(icoPngs));
 
-/* iOS refuses transparency and adds no background of its own, so the square
-   variant is flattened onto the tile colour before it is written. */
+/* iOS supplies no background, so flatten onto the tile colour. */
 await writeFile(
   join(out, 'apple-touch-icon.png'),
   await sharp(Buffer.from(iosSvg), { density: 384 })

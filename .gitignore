@@ -13,6 +13,13 @@ dist/
 .env
 .env.*
 !.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+credentials*.json
+service-account*.json
 
 # Large local installer — does not belong in the repo
 Git-2.55.0.3-64-bit.exe

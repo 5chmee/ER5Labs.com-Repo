@@ -1,0 +1,98 @@
+---
+// Shared frame for every page: fonts (self-hosted), meta, masthead and footer.
+import '@fontsource/literata/400.css';
+import '@fontsource/literata/400-italic.css';
+import '@fontsource/literata/600.css';
+import '@fontsource/ibm-plex-sans/400.css';
+import '@fontsource/ibm-plex-sans/500.css';
+import '@fontsource/ibm-plex-sans/600.css';
+import '@fontsource/ibm-plex-mono/400.css';
+import '@fontsource/ibm-plex-mono/500.css';
+import '../styles/site.css';
+import Analytics from '@vercel/analytics/astro';
+import SpeedInsights from '@vercel/speed-insights/astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+  active?: string;
+  skipTo?: string;
+}
+const {
+  title = 'ER5 Labs · Emad Rafiq',
+  description = 'Emad Rafiq: mathematics, finance and accounting. Client work, projects, notes and experiments under ER5 Labs.',
+  active = '',
+  skipTo = '#view',
+} = Astro.props;
+
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const ogImage = new URL('/og-image.png', Astro.site);
+const NAV = [
+  ['studio', 'Studio'],
+  ['projects', 'Projects'],
+  ['writing', 'Notes'],
+  ['playground', 'Playground'],
+  ['about', 'About'],
+];
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#FAFAFA" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0B0B0C" media="(prefers-color-scheme: dark)" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="ER5 Labs" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+  </head>
+  <body>
+    <a class="skip" href={skipTo}>Skip to content</a>
+    <header class="masthead">
+      <div class="sheet masthead__in">
+        <a class="wordmark" href="/#/">ER5 <i>Labs</i></a>
+        <nav id="nav" aria-label="Sections">
+          {NAV.map(([key, label]) => (
+            <a href={`/#/${key}`} aria-current={active === key ? 'page' : undefined}>{label}</a>
+          ))}
+        </nav>
+      </div>
+    </header>
+
+    <slot />
+
+    <footer class="colophon">
+      <div class="sheet colophon__in">
+        <div><p class="lbl">Contact</p></div>
+        <div>
+          <a class="addr" href="mailto:er5labs@outlook.com">er5labs@outlook.com</a>
+          <p class="colophon__blurb">
+            Open to contract and freelance work, internships and placements. Happy to talk
+            about any of the work here, including the parts that did not go to plan.
+          </p>
+          <p class="social">
+            <a href="https://www.linkedin.com/in/emad-rafiq-5232b928a/">LinkedIn</a>
+            <a href="https://github.com/5chmee">GitHub</a>
+          </p>
+          <p class="colophon__type">Set in Literata and IBM Plex.</p>
+        </div>
+      </div>
+    </footer>
+    <Analytics />
+    <SpeedInsights />
+  </body>
+</html>

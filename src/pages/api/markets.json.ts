@@ -1,9 +1,9 @@
 import type { APIRoute } from 'astro';
 import { instruments, type Instrument } from '../../data/markets';
 import { trending, MAX, SYMBOL } from '../../lib/trending';
+import { cached, fetchJson, finite, guard, json, NO_STORE } from '../../lib/http';
 
-// Runs on demand (serverless) rather than being baked in at build time —
-// the browser can't call Yahoo directly because of CORS, so we proxy it here.
+// Runs on demand. CORS blocks the browser from calling Yahoo directly.
 export const prerender = false;
 
 type Quote = {
@@ -13,69 +13,59 @@ type Quote = {
   changePct: number | null;
 };
 
-// The handful of instruments that keep their friendly name and formatting if
-// they happen to trend. Everything else is a company, shown by its symbol.
+// Instruments with a set name and format. Anything else shows as its symbol.
 const known = new Map(instruments.map((i) => [i.symbol, i]));
 
 const fetchQuote = async (item: Instrument): Promise<Quote | null> => {
-  const url =
+  const data = await fetchJson(
     `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(item.symbol)}` +
-    `?range=1d&interval=1d`;
+      `?range=1d&interval=1d`
+  );
+  const meta = data?.chart?.result?.[0]?.meta;
+  const price = finite(meta?.regularMarketPrice);
+  if (price === null) return null;
 
-  try {
-    const res = await fetch(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ER5Labs/1.0)' },
-      signal: AbortSignal.timeout(6000),
-    });
-    if (!res.ok) return null;
-
-    const json = await res.json();
-    const meta = json?.chart?.result?.[0]?.meta;
-    const price = meta?.regularMarketPrice;
-    if (typeof price !== 'number') return null;
-
-    const prev = meta.chartPreviousClose ?? meta.previousClose ?? null;
-    const changePct =
-      typeof prev === 'number' && prev !== 0 ? ((price - prev) / prev) * 100 : null;
-
-    return { label: item.label, unit: item.unit, price, changePct };
-  } catch {
-    // One bad symbol shouldn't take the whole ticker down.
-    return null;
-  }
+  const prev = finite(meta?.chartPreviousClose ?? meta?.previousClose);
+  const changePct = prev ? finite(((price - prev) / prev) * 100) : null;
+  return { label: item.label, unit: item.unit, price, changePct };
 };
 
-export const GET: APIRoute = async ({ url }) => {
-  if (url.search) {
-    return new Response('{"error":"no query parameters"}', {
-      status: 400,
-      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-    });
+// An empty batch is retried sooner than a good one is refreshed.
+const quotes = cached(
+  (r: { items: Quote[] }) => (r.items.length ? 60_000 : 15_000),
+  async () => {
+    // Called directly. A serverless function's request origin is not the
+    // public one, so fetching our own /api/trending.json silently failed.
+    const today = await trending();
+    const picked = today.symbols.filter((s) => SYMBOL.test(s));
+    const symbols = [...new Set([...picked, ...instruments.map((i) => i.symbol)])];
+
+    // Over-fetch, keep the first MAX that resolve. A dead symbol costs a
+    // slot, not a gap.
+    const wanted: Instrument[] = symbols
+      .slice(0, MAX + 6)
+      .map((symbol) => known.get(symbol) ?? { symbol, label: symbol, unit: 'price' });
+
+    const results = await Promise.all(wanted.map(fetchQuote));
+    return {
+      items: results.filter((q): q is Quote => q !== null).slice(0, MAX),
+      updated: Date.now(),
+    };
   }
+);
 
-  // Called directly rather than over HTTP. Asking our own /api/trending.json
-  // meant relying on the request origin inside a serverless function, which is
-  // not the public one, so the fetch failed and the ticker quietly fell back
-  // to the fixed list.
-  const today = await trending();
-  const picked = today.symbols.filter((s) => SYMBOL.test(s));
-  const symbols = [...new Set([...picked, ...instruments.map((i) => i.symbol)])];
+export const GET: APIRoute = async (ctx) => {
+  const bad = guard(ctx);
+  if (bad) return bad;
 
-  const wanted: Instrument[] = symbols.map(
-    (symbol) => known.get(symbol) ?? { symbol, label: symbol, unit: 'price' }
-  );
-
-  // Quote more than are needed, then keep the first that actually resolve, so
-  // a delisted or mistyped symbol costs a place rather than a gap.
-  const results = await Promise.all(wanted.slice(0, MAX + 6).map(fetchQuote));
-  const items = results.filter((q): q is Quote => q !== null).slice(0, MAX);
-
-  return new Response(JSON.stringify({ items, updated: Date.now() }), {
-    status: 200,
-    headers: {
-      'Content-Type': 'application/json',
-      // Cache at the edge so visitors share one upstream call per minute.
-      'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
-    },
-  });
+  try {
+    const body = await quotes();
+    // Never let the edge cache an empty strip; the ticker keeps its
+    // placeholders on a non-2xx.
+    if (!body.items.length) return json({ error: 'upstream unavailable' }, 503, NO_STORE);
+    // One upstream round a minute, shared across visitors.
+    return json(body, 200, 'public, s-maxage=60, stale-while-revalidate=300');
+  } catch {
+    return json({ error: 'unavailable' }, 503, NO_STORE);
+  }
 };

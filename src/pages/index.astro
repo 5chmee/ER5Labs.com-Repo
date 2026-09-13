@@ -1,120 +1,22 @@
 ---
-import Base from '../layouts/Base.astro';
-import LatestExperiment from '../components/LatestExperiment.astro';
-import { profile, recent } from '../data/site';
-import { projects } from '../data/projects';
-
-// Resolve each pinned slug against the project data so the title, status and
-// tags shown here are exactly the ones on the Projects page.
-const pinned = recent.flatMap((r) => {
-  const project = projects.find((p) => p.slug === r.slug);
-  return project ? [{ project, note: r.note ?? project.blurb }] : [];
-});
+import Site from '../layouts/Site.astro';
 ---
-<Base ticker>
-  <main id="main">
-    <h1 class="sr-only">ER5Labs, the personal hub of Emad Rafiq</h1>
-    <section class="hero container">
-      <p class="eyebrow hero__kicker">Choose a destination above, or read on</p>
-      <p class="hero__intro">{profile.intro}</p>
-    </section>
-
-    <section class="section container band">
-      <div class="about-block">
-        <h2 class="eyebrow about-block__label">About</h2>
-        <div class="about">
-          {profile.about.map((p) => <p>{p}</p>)}
-        </div>
-      </div>
-    </section>
-
-    <section class="section container band">
-      <div class="grid2">
-        <h2 class="eyebrow">Recent &amp; Pinned Additions</h2>
-        <div>
-          <ul class="recent">
-            {pinned.map(({ project, note }) => (
-              <li>
-                <a href={`/projects/${project.slug}`} class="recent__item">
-                  <span class="recent__title">{project.title}</span>
-                  <span class="recent__status">{project.status}</span>
-                  <span class="recent__note">{note}</span>
-                  <ul class="tags recent__tags">
-                    {project.tags.map((t) => <li>{t}</li>)}
-                  </ul>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-    </section>
-
-    <LatestExperiment />
+<Site>
+  <main id="view" class="sheet" tabindex="-1">
+    <noscript>
+      <section class="phead">
+        <p class="lbl">ER5 Labs</p>
+        <h1>This site needs JavaScript for its sections.</h1>
+        <p>
+          The Bitcoin mining lab works on its own at
+          <a class="home-link" href="/playground/bitcoin-mining-game">/playground/bitcoin-mining-game</a>,
+          and I can be reached at er5labs@outlook.com.
+        </p>
+      </section>
+    </noscript>
   </main>
-</Base>
+</Site>
 
-<style>
-  .hero {
-    padding-top: clamp(1.5rem, 4vh, 2.75rem);
-    padding-bottom: clamp(1.5rem, 5vh, 3rem);
-  }
-  .hero__kicker { margin-bottom: 1rem; }
-  .hero__intro {
-    max-width: 52rem;
-    font-size: var(--step-1);
-    font-weight: 500;
-    line-height: 1.34;
-    letter-spacing: -0.01em;
-    color: var(--ink);
-    text-wrap: pretty;
-  }
-
-  .band { border-top: 1px solid var(--line); }
-
-  .grid2 { display: grid; gap: 0.9rem 2.5rem; }
-  @media (min-width: 720px) {
-    .grid2 { grid-template-columns: 9rem 1fr; }
-  }
-  .grid2 > .eyebrow { padding-top: 0.4rem; }
-
-  /* Mirror the hero: hero text hugs the left, About hugs the right */
-  .about-block {
-    margin-left: auto;
-    max-width: 52rem;
-    text-align: right;
-  }
-  .about-block__label { display: block; margin-bottom: 1rem; }
-  .about p {
-    color: var(--ink-2);
-    font-size: var(--step-1);
-    line-height: 1.5;
-  }
-  .about p + p { margin-top: 1rem; }
-
-  .recent { list-style: none; margin: 0; padding: 0; }
-  .recent__item {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 0.2rem 1rem;
-    align-items: baseline;
-    padding: 1rem 0;
-    border-top: 1px solid var(--line);
-    color: var(--ink);
-    transition: color var(--transition);
-  }
-  .recent li:last-child .recent__item { border-bottom: 1px solid var(--line); }
-  .recent__title { font-weight: 600; font-size: var(--step-1); }
-  .recent__note { grid-column: 1; color: var(--muted); font-size: var(--step--1); }
-  .recent__tags { grid-column: 1 / -1; margin-top: 0.7rem; }
-  .recent__status {
-    font-family: var(--font-mono);
-    font-size: 0.66rem;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    color: var(--accent);
-    align-self: center;
-  }
-  .recent__item:hover .recent__title { color: var(--accent); }
-
-</style>
+<script>
+  import '../scripts/site.js';
+</script>

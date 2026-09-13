@@ -1,75 +1,72 @@
 import type { APIRoute } from 'astro';
+import { cached, fetchJson, finite, guard, json, NO_STORE } from '../../lib/http';
 
-// Serves the real header of the latest Bitcoin block, plus current network
-// stats, so the mining demo can hash genuine data instead of invented data.
-// Proxied here rather than called from the browser so the response can be
-// cached at the edge and shared between visitors.
+// Latest block header plus network stats, so the mining demo hashes real
+// data. Proxied for the same CORS and caching reasons as the market route.
 export const prerender = false;
 
-const reject = (body: string, status: number) =>
-  new Response(body, {
-    status,
-    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-  });
+const HEX64 = /^[0-9a-f]{64}$/;
+const hash = (v: unknown) => (typeof v === 'string' && HEX64.test(v) ? v : null);
+const uint = (v: unknown) => (Number.isSafeInteger(v) && (v as number) >= 0 ? (v as number) : null);
 
-export const GET: APIRoute = async ({ url }) => {
-  if (url.search) return reject('{"error":"no query parameters"}', 400);
+const load = async () => {
+  const api = 'https://mempool.space/api/v1';
+  const [blocks, rate, adj, price] = await Promise.all([
+    fetchJson(`${api}/blocks`),
+    fetchJson(`${api}/mining/hashrate/3d`),
+    fetchJson(`${api}/difficulty-adjustment`),
+    fetchJson(`${api}/prices`),
+  ]);
+
+  const b = Array.isArray(blocks) ? blocks[0] : null;
+  if (!b) return null;
+
+  // Every header field is hashed by the demo, so all of them must be present
+  // and well formed or the block is refused outright.
+  const header = {
+    height: uint(b.height),
+    id: hash(b.id),
+    version: uint(b.version),
+    previousblockhash: hash(b.previousblockhash),
+    merkle_root: hash(b.merkle_root),
+    timestamp: uint(b.timestamp),
+    bits: uint(b.bits),
+    nonce: uint(b.nonce),
+  };
+  if (Object.values(header).some((v) => v === null)) return null;
+
+  // The stats are optional: a missing one degrades to null, not an error.
+  return {
+    ...header,
+    difficulty: finite(b.difficulty),
+    networkHashrate: finite(rate?.currentHashrate),
+    // Position within the current 2016-block epoch.
+    retarget: adj
+      ? {
+          progressPercent: finite(adj.progressPercent),
+          difficultyChange: finite(adj.difficultyChange),
+          remainingBlocks: finite(adj.remainingBlocks),
+          nextRetargetHeight: finite(adj.nextRetargetHeight),
+          timeAvg: finite(adj.timeAvg),
+          previousRetarget: finite(adj.previousRetarget),
+        }
+      : null,
+    price: price ? { GBP: finite(price.GBP), USD: finite(price.USD) } : null,
+  };
+};
+
+// Blocks arrive about every 10 minutes; a failure is retried after 15 s.
+const latest = cached((v: Awaited<ReturnType<typeof load>>) => (v ? 120_000 : 15_000), load);
+
+export const GET: APIRoute = async (ctx) => {
+  const bad = guard(ctx);
+  if (bad) return bad;
 
   try {
-    const headers = { 'User-Agent': 'Mozilla/5.0 (compatible; ER5Labs/1.0)' };
-    const grab = (u: string) =>
-      fetch(u, { headers, signal: AbortSignal.timeout(6000) }).catch(() => null);
-
-    const [blocksRes, rateRes, adjRes, priceRes] = await Promise.all([
-      grab('https://mempool.space/api/v1/blocks'),
-      grab('https://mempool.space/api/v1/mining/hashrate/3d'),
-      grab('https://mempool.space/api/v1/difficulty-adjustment'),
-      grab('https://mempool.space/api/v1/prices'),
-    ]);
-    if (!blocksRes?.ok) return new Response('{"error":"upstream"}', { status: 502 });
-
-    const block = (await blocksRes.json())?.[0];
-    if (!block) return new Response('{"error":"no block"}', { status: 502 });
-
-    const rate = rateRes?.ok ? await rateRes.json() : null;
-    const adj = adjRes?.ok ? await adjRes.json() : null;
-    const price = priceRes?.ok ? await priceRes.json() : null;
-
-    return new Response(
-      JSON.stringify({
-        height: block.height,
-        id: block.id,
-        version: block.version,
-        previousblockhash: block.previousblockhash,
-        merkle_root: block.merkle_root,
-        timestamp: block.timestamp,
-        bits: block.bits,
-        nonce: block.nonce,
-        difficulty: block.difficulty,
-        networkHashrate: rate?.currentHashrate ?? null,
-        // Retarget maths: where we are in the current 2016-block epoch.
-        retarget: adj
-          ? {
-              progressPercent: adj.progressPercent,
-              difficultyChange: adj.difficultyChange,
-              remainingBlocks: adj.remainingBlocks,
-              nextRetargetHeight: adj.nextRetargetHeight,
-              timeAvg: adj.timeAvg,
-              previousRetarget: adj.previousRetarget,
-            }
-          : null,
-        price: price ? { GBP: price.GBP, USD: price.USD } : null,
-      }),
-      {
-        status: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          // A new block arrives roughly every 10 minutes.
-          'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=600',
-        },
-      }
-    );
+    const body = await latest();
+    if (!body) return json({ error: 'upstream unavailable' }, 502, NO_STORE);
+    return json(body, 200, 'public, s-maxage=120, stale-while-revalidate=600');
   } catch {
-    return new Response('{"error":"unreachable"}', { status: 502 });
+    return json({ error: 'unavailable' }, 502, NO_STORE);
   }
 };
