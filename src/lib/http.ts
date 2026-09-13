@@ -53,6 +53,23 @@ export const fetchJson = async (url: string, ms = 6000): Promise<any> => {
   }
 };
 
+// Same limits as fetchJson, for feeds that are not JSON (RSS).
+export const fetchText = async (url: string, ms = 6000): Promise<string | null> => {
+  try {
+    const res = await fetch(url, {
+      headers: { 'User-Agent': UA, Accept: 'application/rss+xml, application/xml, text/xml' },
+      signal: AbortSignal.timeout(ms),
+    });
+    if (!res.ok) {
+      await res.body?.cancel();
+      return null;
+    }
+    return await readCapped(res, MAX_BYTES);
+  } catch {
+    return null;
+  }
+};
+
 export const finite = (v: unknown): number | null =>
   typeof v === 'number' && Number.isFinite(v) ? v : null;
 
@@ -76,7 +93,7 @@ export const rejectQuery = (url: URL) =>
 // Serverless instances do not share memory, so it is a per-instance floor,
 // with the Vercel Firewall rule (Step 3) as the global limit.
 const WINDOW_MS = 60_000;
-const LIMIT = 30;
+const LIMIT = 60;
 const MAX_TRACKED = 5000;
 const hits = new Map<string, { n: number; reset: number }>();
 
@@ -97,10 +114,8 @@ const limited = (ip: string) => {
   return res;
 };
 
-// Every route runs this first: no query strings, then the rate limit.
-export const guard = (ctx: { url: URL; clientAddress: string }) => {
-  const bad = rejectQuery(ctx.url);
-  if (bad) return bad;
+// The rate limit on its own, for server-rendered pages.
+export const rateLimited = (ctx: { clientAddress: string }) => {
   let ip = 'unknown';
   try {
     ip = ctx.clientAddress || ip;
@@ -109,6 +124,9 @@ export const guard = (ctx: { url: URL; clientAddress: string }) => {
   }
   return limited(ip);
 };
+
+// Every API route runs this first: no query strings, then the rate limit.
+export const guard = (ctx: { url: URL; clientAddress: string }) => rejectQuery(ctx.url) ?? rateLimited(ctx);
 
 // Holds a result for ttl(result) ms and shares one in-flight load between
 // concurrent callers, so a burst of cache misses on one instance costs one
