@@ -1,18 +1,11 @@
-// ---------------------------------------------------------------------------
-// MARKET TICKER — the fallback line-up, and the friendly names.
+// Fallback line-up for the ticker, and the display names.
 //
-// The strip normally shows whatever is trending that day, chosen by
-// src/pages/api/trending.json.ts. This list does two jobs behind that:
+// The strip shows whatever is trending that day (see api/trending.json.ts).
+// These stand in if both sources are unreachable, and any that do trend keep
+// the name and formatting set here instead of showing as a bare symbol.
 //
-//   1. If both trending sources are unreachable, the ticker shows these
-//      instead of emptying out.
-//   2. If one of these does trend, it keeps the name and formatting given
-//      here rather than appearing as a bare symbol.
-//
-//   symbol — Yahoo Finance symbol (futures use "=F", indices start with "^")
-//   label  — what the ticker shows
-//   unit   — 'price' renders 1,234.56 · 'yield' renders 4.68%
-// ---------------------------------------------------------------------------
+//   symbol  Yahoo Finance symbol; futures use "=F", indices start with "^"
+//   unit    'price' renders 1,234.56, 'yield' renders 4.68%
 
 export type Instrument = {
   symbol: string;

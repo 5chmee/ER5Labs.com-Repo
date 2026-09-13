@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
-    "build": "astro build",
+    "build": "astro build && node scripts/check-csp.mjs",
     "preview": "astro preview",
     "icons": "node scripts/build-icons.mjs",
     "astro": "astro"
@@ -15,6 +15,9 @@
     "@astrojs/sitemap": "^3.7.3",
     "@astrojs/vercel": "^11.0.8",
     "@fontsource/dm-mono": "^5.3.0",
+    "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@fontsource/ibm-plex-sans": "^5.3.0",
+    "@fontsource/literata": "^5.3.0",
     "@fontsource/schibsted-grotesk": "^5.3.0",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",

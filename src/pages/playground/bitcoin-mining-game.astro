@@ -1,0 +1,313 @@
+---
+// The Bitcoin mining lab: the live demo and the full walkthrough on one page.
+// The lab itself is the same component the previous site ran; the tokens it
+// was written against are mapped onto this site's palette below.
+import Site from '../../layouts/Site.astro';
+import BitcoinMiner from '../../components/experiments/BitcoinMiner.astro';
+
+const title = 'Bitcoin mining, as a probability';
+const description =
+  'Hash the real header of the latest Bitcoin block in your browser, then see why proof of work is a lottery and what it would take to profit.';
+---
+<Site title={`${title} · ER5 Labs`} description={description} active="playground" skipTo="#main">
+  <main id="main" class="sheet">
+    <article class="detail lab-page">
+      <a class="back" href="/#/playground">&larr; Playground</a>
+      <h1>{title}</h1>
+      <dl class="meta">
+        <div><dt>Area</dt><dd>Probability</dd></div>
+        <div><dt>Built with</dt><dd>Web Workers · SHA-256 · WebSockets</dd></div>
+        <div><dt>Date</dt><dd>Jul 2026</dd></div>
+      </dl>
+
+      <div class="detail__body">
+        <p class="detail__lede">
+          Proof of work against a genuine block. The 80-byte header comes live from the Bitcoin
+          network and the hashing is real double SHA-256 running in a pool of Web Workers, so
+          feeding it the real winning nonce reproduces that block's actual hash.
+        </p>
+        <p>
+          The payout is the only part that is not real: the true target needs around 10<sup>23</sup>
+          hashes, so you are scored against an easier practice target while the real target, the
+          retarget maths and the profitability model sit alongside it.
+        </p>
+      </div>
+
+      <nav class="lab-toc" aria-label="On this page">
+        <a href="#lab">The lab</a>
+        <a href="#walkthrough">How it works</a>
+        <a href="#odds">The odds</a>
+        <a href="#retarget">Ten minutes</a>
+        <a href="#payout">The payout</a>
+      </nav>
+
+      <section class="lab" id="lab" aria-label="Mining lab">
+        <BitcoinMiner />
+      </section>
+
+      <section class="walk" id="walkthrough">
+        <p class="lbl">Walkthrough</p>
+
+        <h2>Mining, in one paragraph</h2>
+        <p>
+          Bitcoin mining is a guessing game. Take the batch of transactions waiting to be recorded,
+          add one changeable number to it called the <strong>nonce</strong>, then feed the whole lot
+          into a scrambler that turns any input into a 64 character code. Change the nonce by one and
+          the code comes out completely different, with no pattern you can follow. You win if the
+          code that comes out happens to start with enough zeros.
+        </p>
+        <p>
+          That is the entire contest. There is no skill in it and no way to work backwards, so the
+          only strategy is guessing faster than everyone else. That is why miners buy warehouses of
+          machines that guess trillions of times a second.
+        </p>
+        <p>The lab above plays that exact game, against a real block taken live off the Bitcoin network.</p>
+
+        <h2>Proving it is the real thing</h2>
+        <p>
+          Anybody can put a spinning number on a page and call it mining. So the lab has a button
+          that settles the question.
+        </p>
+        <p>
+          Every block that has ever been mined was won by somebody finding a nonce. That winning
+          number is stored in the block forever. If this code is genuinely doing what real miners do,
+          then feeding it a real block's winning nonce should reproduce that block's real code
+          exactly.
+        </p>
+        <p>Press <em>Use the real winning nonce</em> and it does. Block 959,833 comes back as:</p>
+        <pre><code>000000000000000000016a439fba8b46a18e7fe17d774cf23f31dfd4235a9330</code></pre>
+        <p>
+          which is that block's actual identifier, the one you can look up on any block explorer. If
+          a single bit of the implementation were wrong it would return noise instead. The check runs
+          against whatever block is current, so you do not have to take my word for it.
+        </p>
+
+        <h2>Why writing the scrambler myself was worth it</h2>
+        <p>The scrambler is SHA-256. Browsers ship with it built in, so I used that first.</p>
+        <p>
+          It was correct but slow, for an annoying reason: the built in version hands back a promise,
+          which is fine if you hash a few things and useless if you hash millions. The waiting cost
+          more than the work. I was getting about seventeen thousand guesses a second, of which almost
+          none was arithmetic.
+        </p>
+        <p>
+          So I wrote SHA-256 out by hand instead: the eight working numbers it shuffles, the sixty-four
+          constants it mixes in, the rotations, the additions. A plain loop with no waiting in it. That
+          runs about eight times faster, roughly a hundred and forty thousand guesses a second on one
+          thread.
+        </p>
+        <p>
+          I did not trust a word of it until it passed three tests: the two standard reference cases
+          that every implementation must match, then the real block above.
+        </p>
+
+        <h3>The bit that actually took the time</h3>
+        <p>Almost none of the difficulty was in the mathematics. It was in the order of the bytes.</p>
+        <p>
+          Bitcoin writes some numbers backwards. Not metaphorically, literally: the number 1 is stored
+          as <code>01 00 00 00</code>. The two codes inside a block are stored in reverse of how they
+          are displayed, because Bitcoin prints them one way round and stores them the other. Then the
+          final answer has to be flipped again before you can compare it to anything.
+        </p>
+        <p>
+          Three separate reversals. Getting any one of them wrong gives you a respectable looking code
+          that is simply wrong. That is exactly why I tested against a known block rather than trusting
+          my eyes.
+        </p>
+
+        <h2 id="odds">How long should a win take?</h2>
+        <p>This is the part I find genuinely interesting. It is where the statistics live.</p>
+        <p>
+          Every guess has the same small chance of winning, but crucially the guesses do not build on
+          each other. Being a million guesses in tells you nothing about how close you are. The process
+          has no memory.
+        </p>
+        <p>
+          That has a real consequence: <strong>there is no progress bar in mining, nor can there ever
+          be.</strong> Not because nobody has written one, but because there is nothing for it to
+          measure. This is a mathematical fact rather than a design choice.
+        </p>
+        <p>
+          The lab draws your chance of having won by any given moment, using the speed you are actually
+          going. The curve climbs steeply then flattens. The dashed line marks the halfway point, where
+          you have a 50/50 chance of being done.
+        </p>
+        <details>
+          <summary>The formal version</summary>
+          <p>
+            Each nonce is an independent Bernoulli trial. Asking for <em>d</em> leading hexadecimal
+            zeros gives each attempt probability p = 16<sup>−d</sup>, so the number of attempts before
+            the first success is geometric with expectation 16<sup>d</sup>. Taking the continuous limit,
+            with measured rate R the hit rate is λ = pR and
+          </p>
+          <pre><code>P(T ≤ t) = 1 − e^(−λt)</code></pre>
+          <p>
+            which is the exponential distribution. Its memorylessness is why block arrivals across the
+            whole network form a Poisson process with a mean of ten minutes. The median is ln(2)/λ,
+            which is what the dashed line marks.
+          </p>
+        </details>
+
+        <h2 id="retarget">Why blocks always take ten minutes</h2>
+        <p>
+          Left alone, blocks would arrive faster and faster as more machines joined. Bitcoin stops that
+          by moving the goalposts.
+        </p>
+        <p>
+          Every two weeks it counts how long the last 2016 blocks really took. If they came faster than
+          ten minutes each, winning gets harder. If slower, easier. The change is capped at a factor of
+          four in either direction so one strange fortnight cannot break it.
+        </p>
+        <p>
+          An engineer would recognise this immediately: it is a thermostat. A feedback loop correcting a
+          noisy measurement back towards a set point.
+        </p>
+        <p>
+          The lab shows where the network is in that cycle right now, using live data. While I was
+          writing this, blocks were running slightly slow at 10.3 minutes, so the next adjustment was
+          heading about 1 per cent harder.
+        </p>
+
+        <h2 id="payout">Why it can never pay you anything</h2>
+        <p>The lab works this out live rather than just asserting it.</p>
+        <p>
+          The Bitcoin network currently makes about <strong>873 billion billion</strong> guesses per
+          second. My browser, using four threads, managed about <strong>85,000</strong>. That is a gap
+          of roughly sixteen orders of magnitude, which is not a gap you close with better code.
+        </p>
+        <p>
+          Following it through: a visitor's share of the network works out to around
+          2.6 × 10<sup>−12</sup> BTC per day. The smallest amount a mining pool will normally pay out is
+          0.0001 BTC. At that rate you would need to mine without stopping for something like
+          <strong>a hundred thousand years</strong> to be paid once.
+        </p>
+        <p>
+          So the lab submits nothing, joins no pool and contains no wallet address. It says so on
+          screen, twice. Anything else would be dishonest. Browser miners that hide this are exactly
+          what antivirus software blocks on sight.
+        </p>
+
+        <h2>Does it pay for anyone?</h2>
+        <p>
+          Since the real question is not whether a browser can mine but whether anything can, the
+          profitability model is built into the lab.
+        </p>
+        <p>
+          You earn the same slice of the day's new coins as your slice of the world's guessing power,
+          then you pay for the electricity you burned getting it. Put a top end machine, 200 trillion
+          guesses a second drawing 3.5 kilowatts, on an ordinary British home tariff of 25p per unit.
+          The answer is a <strong>loss of about £16 a day</strong>. It earns roughly £4.94 and spends
+          £21 on power.
+        </p>
+        <p>
+          The break-even electricity price is about <strong>6p per unit</strong>. That single number
+          explains the whole industry: it is why mining happens next to hydroelectric dams or flared gas
+          wells, never anywhere you could plug a machine in at home.
+        </p>
+        <p>
+          The model also gives payback time and the four year figure across a halving cycle, compared
+          against simply buying the coins with the same money. It assumes difficulty and price stay
+          flat, which if anything is generous to mining, since difficulty has historically climbed and
+          quietly erodes what a fixed machine earns.
+        </p>
+
+        <h2>Keeping the page quick</h2>
+        <p>
+          A guessing loop is the fastest way to make a web page stutter, so none of it runs where the
+          page is drawn. The work happens in background threads, one per core you allow, each starting
+          at a different nonce and stepping by the number of threads so no two ever check the same
+          number.
+        </p>
+        <p>
+          Inside each thread the loop deliberately rests. It guesses for a while, times itself, then
+          waits in proportion to the effort you asked for. Choosing 30 per cent means working for one
+          moment and waiting for two. That is why the page still scrolls smoothly with every core busy.
+        </p>
+        <p>
+          A few rules follow from taking that seriously. The speed shown includes the resting time, so
+          it reflects what you actually asked for rather than flattering itself. Nothing runs at all
+          until you have read the notice and pressed start. And it stops by itself when you switch tabs,
+          because there is no excuse for draining someone's battery on a page they have left.
+        </p>
+        <p>
+          New blocks arrive over a live connection rather than by repeatedly asking, so when the network
+          finds one the lab moves onto that block within a second or two. The slower moving data, the
+          difficulty schedule and the price, comes through a small shared cache so one request serves
+          every visitor for a couple of minutes.
+        </p>
+
+        <h2>What I would add next</h2>
+        <p>
+          Plotting difficulty over several years on a log scale would show the thermostat responding to
+          each new generation of hardware. Letting the profitability model take a difficulty growth rate
+          would turn it from a snapshot into a forecast, which is closer to the work I actually enjoy.
+        </p>
+      </section>
+    </article>
+  </main>
+</Site>
+
+<style>
+  .lab-page { max-width: 820px; }
+
+  .lab-toc {
+    display: flex; flex-wrap: wrap; gap: 0.4rem 1.1rem; margin: 1.8rem 0 1.4rem;
+    padding-block: 0.7rem; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+    font-family: var(--ui); font-size: 0.8rem;
+  }
+  .lab-toc a { color: var(--ink-2); text-decoration: none; border-bottom: 1px solid transparent; }
+  .lab-toc a:hover { color: var(--ink); border-bottom-color: var(--accent); }
+
+  /* The lab component was written against the previous site's token names.
+     They are mapped here, so the component itself did not have to change. */
+  .lab {
+    --bg-2: var(--mark);
+    --surface: var(--raise);
+    --line: var(--rule);
+    --line-2: var(--rule-2);
+    --font-mono: var(--mono);
+    --step--1: 0.86rem;
+    --step-0: 1rem;
+    --step-1: 1.12rem;
+    --radius: 0;
+    --radius-lg: 0;
+    --transition: 160ms ease;
+    --accent-2: color-mix(in srgb, var(--accent) 82%, var(--ink));
+    --on-accent: #0A0A0A;
+    --board-bg: #141415;
+    --board-line: #2A2A2B;
+    --board-text: #F0F0EF;
+    --board-dim: #9A9A99;
+    --board-amber: var(--accent);
+    margin-bottom: 3rem;
+    font-family: var(--ui);
+    scroll-margin-top: 80px;
+  }
+  .lab :global(h4) { font-family: var(--ui); font-weight: 600; margin: 0; }
+  .lab :global(.miner__primer p),
+  .lab :global(.miner__panel-note) { font-family: var(--prose); }
+
+  .walk { border-top: 1px solid var(--rule); padding-top: 2rem; }
+  .walk h2, .walk h3 {
+    font-family: var(--ui); font-weight: 600; letter-spacing: -0.01em;
+    margin: 2.2rem 0 0.6rem; scroll-margin-top: 80px;
+  }
+  .walk h2 { font-size: 1.25rem; }
+  .walk h3 { font-size: 1.02rem; }
+  .walk p { max-width: var(--measure); color: var(--ink-2); }
+  .walk strong { color: var(--ink); font-weight: 600; }
+  .walk code {
+    font-family: var(--mono); font-size: 0.85em; background: var(--mark);
+    padding: 0.05em 0.3em; border: 1px solid var(--rule);
+  }
+  .walk pre {
+    max-width: 100%; overflow-x: auto; margin: 0.9rem 0; padding: 0.8rem 1rem;
+    background: var(--mark); border: 1px solid var(--rule);
+  }
+  .walk pre code { background: none; border: 0; padding: 0; font-size: 0.8rem; }
+  .walk details {
+    max-width: var(--measure); margin: 1rem 0; padding: 0.7rem 1rem;
+    border: 1px solid var(--rule); background: var(--raise);
+  }
+  .walk summary { font-family: var(--ui); font-weight: 600; font-size: 0.9rem; cursor: pointer; }
+</style>
