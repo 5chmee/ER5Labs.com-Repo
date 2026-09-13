@@ -42,5 +42,8 @@
 }
 @media (prefers-reduced-motion: reduce) { .lamp__wire, .lamp__knob { transition: none; } }
 
+/* AI disclosure in the footer: sits just under the typeface line. */
+.colophon .colophon__ai { margin-top: 0.4rem; max-width: 52ch; }
+
 /* Keep the last nav link clear of the cord where the page has no side margin. */
 @media (max-width: 1180px) { .masthead__in { padding-right: 3rem; } }
