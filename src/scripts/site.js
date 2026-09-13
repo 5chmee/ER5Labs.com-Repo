@@ -12,7 +12,7 @@ const TRACKS = {
 };
 
 const ITEMS = [
-  { t:'studio', slug:'confidential-ai', title:'Confidential AI RAG agent, pivoted to a redaction tool first', date:'2026-07',
+  { t:'studio', slug:'confidential-ai', title:'Confidential AI RAG agent, pivoted to a redaction tool first', date:'2026-08',
     area:'Applied AI', kit:'Python · spaCy (NER) · pdfplumber · pandas',
     client:'SBH & Co. Chartered Accountants', engagement:'Redaction tool in development, RAG agent deferred',
     ongoing:true,
