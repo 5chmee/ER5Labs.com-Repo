@@ -282,7 +282,7 @@ function home() {
       Statistics, mechanics, and finance always seem to show up right as things are settling
       down. I built this site to keep track of what I have made, from personal projects to
       the stuff people paid me to do. The common thread across all of them is simple: dealing
-      with heavy logic, managing numbers, or <em>the awkward business of turning written rules
+      with heavy logic, managing numbers or <em>the awkward business of turning written rules
       into code that actually works</em>.</p>
   </section>
   ${block('studio', 2)}
