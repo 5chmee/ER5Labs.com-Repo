@@ -47,14 +47,10 @@ const ITEMS = [
           'Converting to Markdown also cut the token count sharply compared with sending the PDFs, which mattered as much for cost as the redaction did for confidentiality. On the firm’s side it took about 30% off manual document processing, 45 to 70 minutes a time.'] },
 
   { t:'projects', slug:'osint-research', title:'OSINT and network research pipeline', date:'2026-08',
-    area:'Data', kit:'Python · SQL · graph databases · fuzzy entity resolution',
+    area:'Data', kit:'Data management',
     ongoing:true,
-    blurb:'Work in progress: a pipeline that collects public records, resolves them into single identities, and maps how people, companies and assets connect several steps out.',
-    body:['Started in August 2026 and still in development, so this describes the design and where it stands rather than a finished result.',
-          'The first stage is collection. Python and SQL scrape, clean and normalise unstructured public records, such as corporate filings and property registries, into one consistent format for self-directed network research.',
-          'The second is resolution. The same person or company appears under slightly different names, addresses and spellings across sources, so a graph database schema built on node and edge modelling uses fuzzy entity resolution to merge those scattered profiles into unified identity clusters.',
-          'The third is tracing. Network visualisation tools, still being scoped, follow relational paths several degrees out, mapping direct and indirect corporate ties, interpersonal networks, familial associations, shared assets and multi-tier organisational hierarchies.',
-          'The hard part is expected to be the resolution step: merge too eagerly and two different people become one, too cautiously and one person stays split across ten records. How to measure that trade-off is the first thing to settle.'] },
+    blurb:'OSINT (open-source intelligence) is research built from publicly available information; I am currently working on the data management side of it.',
+    body:[] },
 
   { t:'projects', slug:'er5labs', title:'ER5Labs.com', date:'2025-11',
     area:'Tooling', kit:'Astro · TypeScript · Vercel',
@@ -192,7 +188,7 @@ const TIMELINE = (() => {
 const QUEUE = [
   'Surveillance Pricing Tackling Project: how personalised pricing is set from what a seller knows about you, and what can be measured from the outside.',
   'The Architecture of Financial Engineering: a written breakdown of the ten foundational asset pricing approaches, from Black-Scholes through to quantum-accelerated Monte Carlo, with a demo page for each.',
-  'OSINT research pipeline (in development): Python and SQL to collect and normalise public records such as company filings and property registries, a graph schema with fuzzy entity resolution to merge duplicate profiles, and network visualisation to trace direct and indirect paths several degrees out: corporate ties, interpersonal networks, familial associations, shared assets and multi-tier organisational hierarchies.',
+  'OSINT and network research pipeline: research built from publicly available information, currently working on the data management side.',
   'A chess engine, built to find out how far a plain evaluation function and search get you before anything clever is needed.',
 ];
 
