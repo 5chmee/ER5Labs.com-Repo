@@ -277,13 +277,9 @@ function block(track, n) {
 function home() {
   return `<section class="open">
     <p class="lbl lbl--gap">Emad Rafiq &middot; Mathematics with Finance and Accounting</p>
-    <h1>To be cool, you have got to do cool stuff.</h1>
-    <p class="standfirst">Every project I touch eventually turns into a math problem.
-      Statistics, mechanics, and finance always seem to show up right as things are settling
-      down. I built this site to keep track of what I have made, from personal projects to
-      the stuff people paid me to do. The common thread across all of them is simple: dealing
-      with heavy logic, managing numbers or <em>the awkward business of turning written rules
-      into code that actually works</em>.</p>
+    <h1>To be cool, you have to do cool stuff.</h1>
+    <p class="standfirst">This is a personal website where I publish my projects and works, 
+      whether they are personal or professional.</p>
   </section>
   ${block('studio', 2)}
   ${block('projects', 2)}
